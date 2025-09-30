@@ -30,6 +30,23 @@ jest.mock('expo-network', () => ({
   ),
 }));
 
+// Mock Sentry to prevent timers from running in tests
+jest.mock('@sentry/react-native', () => ({
+  init: jest.fn(),
+  wrap: jest.fn((component) => component),
+  captureException: jest.fn(),
+  captureMessage: jest.fn(),
+  addBreadcrumb: jest.fn(),
+  setUser: jest.fn(),
+  setContext: jest.fn(),
+  setTag: jest.fn(),
+  setExtra: jest.fn(),
+  withScope: jest.fn((callback) => callback({})),
+  mobileReplayIntegration: jest.fn(() => ({})),
+  feedbackIntegration: jest.fn(() => ({})),
+  reactNativeTracingIntegration: jest.fn(() => ({})),
+}));
+
 // Mock global expo registry and winter runtime
 global.__ExpoImportMetaRegistry = {
   register: jest.fn(),
