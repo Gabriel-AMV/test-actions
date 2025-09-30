@@ -4,11 +4,9 @@
     "strict": true,
     "jsx": "react-native",
     "target": "esnext",
-    "module": "commonjs",
-    "lib": [
-      "esnext"
-    ],
-    "moduleResolution": "node",
+    "module": "esnext",
+    "lib": ["esnext"],
+    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -17,43 +15,18 @@
     "noEmit": true,
     "baseUrl": "./",
     "paths": {
-      "@/*": [
-        "src/*"
-      ],
-      "@components/*": [
-        "src/components/*"
-      ],
-      "@screens/*": [
-        "src/screens/*"
-      ],
-      "@services/*": [
-        "src/services/*"
-      ],
-      "@database/*": [
-        "src/database/*"
-      ],
-      "@hooks/*": [
-        "src/hooks/*"
-      ],
-      "@repositories/*": [
-        "src/repositories/*"
-      ],
-      "@utils/*": [
-        "src/utils/*"
-      ],
-      "@app-types/*": [
-        "src/types/*"
-      ],
-      "@config/*": [
-        "src/config/*"
-      ]
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@screens/*": ["src/screens/*"],
+      "@services/*": ["src/services/*"],
+      "@database/*": ["src/database/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@repositories/*": ["src/repositories/*"],
+      "@utils/*": ["src/utils/*"],
+      "@app-types/*": ["src/types/*"],
+      "@config/*": ["src/config/*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
 }
