@@ -1,5 +1,4 @@
 import { apiClient } from '../client';
-import { ENV } from '@config/env';
 
 export interface ApiFolderResponse {
   id: number;
@@ -29,7 +28,7 @@ export interface FolderContentsResponse {
 /**
  * Fetch folder contents (subfolders and files) from real API
  */
-async function fetchFolderContentsFromApi(
+export async function fetchFolderContentsFromApi(
   folderId?: number
 ): Promise<FolderContentsResponse> {
   const endpoint = folderId ? `/folders/${folderId}/contents` : '/folders/root/contents';
@@ -140,5 +139,4 @@ export const mockApiEndpoints = {
       };
     }
   },
-
 };

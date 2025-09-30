@@ -1,8 +1,6 @@
 import * as SQLite from 'expo-sqlite';
-import * as Sentry from '@sentry/react-native';
 import { ENV } from '@config/env';
 import { migrations } from './migrations';
-import { logger } from '@utils/logger';
 
 let database: SQLite.SQLiteDatabase | null = null;
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, cleanup } from '@testing-library/react-native';
+import { render, screen, cleanup } from '@testing-library/react-native';
 import { FolderViewScreen } from '@screens/FolderViewScreen';
 import { useFolderContents } from '@hooks/useFolders';
 

@@ -1,7 +1,6 @@
 import { getDatabase } from '@database/index';
 import { Folder } from '@database/models';
 import { File } from '@database/models/File';
-import { logger } from '@utils/logger';
 
 export interface FolderItem {
   id: number;
