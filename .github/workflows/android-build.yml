@@ -44,8 +44,18 @@ jobs:
       - name: Prebuild Android project
         run: npx expo prebuild --platform android --clean
 
+      - name: Check for Sentry token
+        id: sentry-check
+        shell: bash
+        run: |
+          if [ "${{ secrets.SENTRY_AUTH_TOKEN }}" != '' ]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Configure Sentry for CI
-        if: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        if: steps.sentry-check.outputs.available == 'true'
         run: |
           echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}" >> android/gradle.properties
 
