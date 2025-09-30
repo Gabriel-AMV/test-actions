@@ -46,7 +46,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: android
-          key: android-${{ hashFiles('package-lock.json', 'app.json') }}
+          key: android-${{ hashFiles('package-lock.json', 'app.json', 'package.json') }}
           restore-keys: |
             android-
 
