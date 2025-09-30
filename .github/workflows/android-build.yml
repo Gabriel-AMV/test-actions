@@ -46,7 +46,9 @@ jobs:
         run: npx expo prebuild --platform android --clean
 
       - name: Configure Sentry for CI
-        if: secrets.SENTRY_AUTH_TOKEN != ''
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        if: env.SENTRY_AUTH_TOKEN != ''
         run: |
           echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}" >> android/gradle.properties
 
