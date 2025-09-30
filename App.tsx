@@ -37,9 +37,7 @@ Sentry.init({
     Sentry.mobileReplayIntegration(),
     Sentry.feedbackIntegration(),
     // HTTP instrumentation for network request tracking
-    Sentry.reactNativeTracingIntegration({
-      routingInstrumentation: Sentry.routingInstrumentation,
-    }),
+    Sentry.reactNativeTracingIntegration(),
   ],
 
   // Data scrubbing - filter sensitive data

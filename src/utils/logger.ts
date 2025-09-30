@@ -21,7 +21,7 @@ class Logger {
     Sentry.addBreadcrumb({
       level: 'warning',
       message,
-      data: args[0],
+      data: args[0] as { [key: string]: unknown } | undefined,
     });
   }
 

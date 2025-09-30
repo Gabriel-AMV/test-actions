@@ -16,11 +16,15 @@ jest.mock('@utils/logger', () => ({
 }));
 
 describe('FolderViewScreen', () => {
-  const mockNavigation: RootStackScreenProps<'FolderView'>['navigation'] = {
-    push: jest.fn(),
-    goBack: jest.fn(),
-    canGoBack: jest.fn(),
-  } as RootStackScreenProps<'FolderView'>['navigation'];
+  const mockPush = jest.fn();
+  const mockGoBack = jest.fn();
+  const mockCanGoBack = jest.fn();
+
+  const mockNavigation = {
+    push: mockPush,
+    goBack: mockGoBack,
+    canGoBack: mockCanGoBack,
+  } as unknown as RootStackScreenProps<'FolderView'>['navigation'];
 
   const mockRoute: RootStackScreenProps<'FolderView'>['route'] = {
     params: { folderId: 1, folderName: 'Test Folder' },
@@ -100,7 +104,7 @@ describe('FolderViewScreen', () => {
   });
 
   it('should show back button when navigation can go back', () => {
-    mockNavigation.canGoBack.mockReturnValue(true);
+    mockCanGoBack.mockReturnValue(true);
 
     (useFolderContents as jest.Mock).mockReturnValue({
       data: [],
@@ -114,7 +118,7 @@ describe('FolderViewScreen', () => {
   });
 
   it('should not show back button when navigation cannot go back', () => {
-    mockNavigation.canGoBack.mockReturnValue(false);
+    mockCanGoBack.mockReturnValue(false);
 
     (useFolderContents as jest.Mock).mockReturnValue({
       data: [],
