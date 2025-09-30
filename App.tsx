@@ -121,10 +121,10 @@ export default Sentry.wrap(function App() {
 
 const styles = StyleSheet.create({
   centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
+    flex: 1,
+    justifyContent: 'center',
   },
   errorText: {
     color: 'red',

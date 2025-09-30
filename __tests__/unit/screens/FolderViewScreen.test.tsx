@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, cleanup } from '@testing-library/react-native';
 import { FolderViewScreen } from '@screens/FolderViewScreen';
 import { useFolderContents } from '@hooks/useFolders';
+import { RootStackScreenProps } from '@app-types/navigation';
 
 // Mock the hook
 jest.mock('@hooks/useFolders');
@@ -15,15 +16,15 @@ jest.mock('@utils/logger', () => ({
 }));
 
 describe('FolderViewScreen', () => {
-  const mockNavigation = {
+  const mockNavigation: RootStackScreenProps<'FolderView'>['navigation'] = {
     push: jest.fn(),
     goBack: jest.fn(),
     canGoBack: jest.fn(),
-  } as any;
+  } as RootStackScreenProps<'FolderView'>['navigation'];
 
-  const mockRoute = {
+  const mockRoute: RootStackScreenProps<'FolderView'>['route'] = {
     params: { folderId: 1, folderName: 'Test Folder' },
-  } as any;
+  } as RootStackScreenProps<'FolderView'>['route'];
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -127,7 +128,7 @@ describe('FolderViewScreen', () => {
   });
 
   it('should use "Root" as default folder name when not provided', () => {
-    const routeWithoutParams = { params: {} } as any;
+    const routeWithoutParams = { params: {} } as RootStackScreenProps<'FolderView'>['route'];
 
     (useFolderContents as jest.Mock).mockReturnValue({
       data: [],

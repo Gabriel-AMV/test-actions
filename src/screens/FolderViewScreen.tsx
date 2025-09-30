@@ -122,40 +122,63 @@ function formatFileSize(bytes: number): string {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  title: {
+  arrow: {
+    color: '#999',
     fontSize: 24,
-    fontWeight: 'bold',
   },
   backButton: {
     marginTop: 8,
   },
   backButtonText: {
-    fontSize: 16,
     color: '#007AFF',
+    fontSize: 16,
   },
-  list: {
-    padding: 16,
-  },
-  item: {
-    flexDirection: 'row',
+  centerContainer: {
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 8,
-    backgroundColor: '#f8f8f8',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  container: {
+    backgroundColor: '#fff',
+    flex: 1,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    color: '#999',
+    fontSize: 16,
+  },
+  errorDetail: {
+    color: '#666',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  errorText: {
+    color: '#ff3b30',
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: 8,
+    textAlign: 'center',
+  },
+  header: {
+    borderBottomColor: '#ddd',
+    borderBottomWidth: 1,
+    padding: 20,
   },
   icon: {
     fontSize: 24,
     marginRight: 12,
+  },
+  item: {
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    flexDirection: 'row',
+    marginBottom: 8,
+    padding: 16,
   },
   itemInfo: {
     flex: 1,
@@ -165,42 +188,19 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   itemSize: {
-    fontSize: 12,
     color: '#666',
+    fontSize: 12,
   },
-  arrow: {
-    fontSize: 24,
-    color: '#999',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+  list: {
+    padding: 16,
   },
   loadingText: {
+    color: '#666',
+    fontSize: 16,
     marginTop: 12,
-    fontSize: 16,
-    color: '#666',
   },
-  errorText: {
-    fontSize: 18,
-    color: '#ff3b30',
-    fontWeight: '600',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  errorDetail: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-  },
-  emptyContainer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
   },
 });

@@ -61,38 +61,38 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 40,
-    textAlign: 'center',
-  },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    fontSize: 16,
-  },
   button: {
-    height: 50,
+    alignItems: 'center',
     backgroundColor: '#007AFF',
     borderRadius: 8,
+    height: 50,
     justifyContent: 'center',
-    alignItems: 'center',
     marginTop: 8,
   },
   buttonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  container: {
+    backgroundColor: '#fff',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  input: {
+    borderColor: '#ddd',
+    borderRadius: 8,
+    borderWidth: 1,
+    fontSize: 16,
+    height: 50,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 40,
+    textAlign: 'center',
   },
 });
