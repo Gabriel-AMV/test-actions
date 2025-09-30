@@ -28,6 +28,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
       - name: Install dependencies
         run: npm ci
@@ -41,8 +42,21 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Prebuild Android project
+        run: npx expo prebuild --platform android --clean
+
+      - name: Configure Sentry for CI
+        if: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
+        run: |
+          echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}" >> android/gradle.properties
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: false
+
       - name: Build Android APK
-        run: npx expo prebuild --platform android && cd android && ./gradlew assembleRelease
+        run: cd android && ./gradlew assembleRelease --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -50,3 +64,15 @@ jobs:
           name: app-release.apk
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
+
+      # - name: Upload to Firebase App Distribution
+      #   uses: wzieba/Firebase-Distribution-Github-Action@v1
+      #   with:
+      #     appId: ${{ secrets.FIREBASE_APP_ID }}
+      #     serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      #     groups: testers
+      #     file: android/app/build/outputs/apk/release/app-release.apk
+      #     releaseNotes: |
+      #       Build from commit: ${{ github.sha }}
+      #       Branch: ${{ github.ref_name }}
+      #       Triggered by: ${{ github.actor }}
