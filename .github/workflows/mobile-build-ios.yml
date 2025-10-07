@@ -140,8 +140,14 @@ jobs:
             output_name:"FileTest.ipa" \
             export_team_id:"${{ vars.APPLE_TEAM_ID }}" \
             codesigning_identity:"Apple Distribution" \
-            xcargs:"DEVELOPMENT_TEAM=${{ vars.APPLE_TEAM_ID }}" \
+            xcargs:"CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=${{ vars.APPLE_TEAM_ID }}" \
             clean:true
+
+      - name: Output build logs on failure
+        if: failure()
+        run: |
+          echo "=== Build log ==="
+          cat ~/Library/Logs/gym/FileTest-FileTest.log || echo "Log file not found"
 
       - name: Set artifact name
         if: inputs.upload-artifact
