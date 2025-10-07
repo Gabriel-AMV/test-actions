@@ -1,0 +1,92 @@
+name: CI/CD - Mobile
+
+run-name: "CI/CD Mobile (${{ needs.determine-environment.outputs.environment-label }}) - ${{ github.event.head_commit.message || github.ref_name }}"
+
+on:
+  push:
+    branches:
+      - develop
+      - qa
+      - uat
+      - main
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  determine-environment:
+    name: Determine Environment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      environment-label: ${{ steps.set-env.outputs.environment-label }}
+      export-method: ${{ steps.set-env.outputs.export-method }}
+    steps:
+      - name: Set environment based on branch or tag
+        id: set-env
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "environment-label=PROD" >> $GITHUB_OUTPUT
+            echo "export-method=app-store" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "environment-label=PROD" >> $GITHUB_OUTPUT
+            echo "export-method=app-store" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/heads/uat ]]; then
+            echo "environment=uat" >> $GITHUB_OUTPUT
+            echo "environment-label=UAT" >> $GITHUB_OUTPUT
+            echo "export-method=app-store" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/heads/qa ]]; then
+            echo "environment=qa" >> $GITHUB_OUTPUT
+            echo "environment-label=QA" >> $GITHUB_OUTPUT
+            echo "export-method=app-store" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/heads/develop ]]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "environment-label=DEV" >> $GITHUB_OUTPUT
+            echo "export-method=app-store" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "environment-label=DEV" >> $GITHUB_OUTPUT
+            echo "export-method=app-store" >> $GITHUB_OUTPUT
+          fi
+
+  build-android:
+    name: Build Android
+    needs: determine-environment
+    uses: ./.github/workflows/mobile-build-android.yml
+    with:
+      environment: ${{ needs.determine-environment.outputs.environment }}
+      upload-artifact: true
+    secrets: inherit
+
+  build-ios:
+    name: Build iOS
+    needs: determine-environment
+    uses: ./.github/workflows/mobile-build-ios.yml
+    with:
+      environment: ${{ needs.determine-environment.outputs.environment }}
+      export-method: ${{ needs.determine-environment.outputs.export-method }}
+      upload-artifact: true
+    secrets: inherit
+
+  # Uncomment to enable deployment (CD)
+  # Note: build-android and build-ios already output artifact-name
+  # deploy-android:
+  #   name: Deploy Android
+  #   needs: [determine-environment, build-android]
+  #   uses: ./.github/workflows/deployments/deploy-android.yml
+  #   with:
+  #     environment: ${{ needs.determine-environment.outputs.environment }}
+  #     artifact-name: ${{ needs.build-android.outputs.artifact-name }}
+  #     track: internal
+  #   secrets: inherit
+
+  # deploy-ios:
+  #   name: Deploy iOS
+  #   needs: [determine-environment, build-ios]
+  #   uses: ./.github/workflows/deployments/deploy-ios.yml
+  #   with:
+  #     environment: ${{ needs.determine-environment.outputs.environment }}
+  #     artifact-name: ${{ needs.build-ios.outputs.artifact-name }}
+  #   secrets: inherit

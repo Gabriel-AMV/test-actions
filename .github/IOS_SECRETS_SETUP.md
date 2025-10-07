@@ -50,6 +50,26 @@ Your iOS Distribution Certificate exported as `.p12` file, then converted to bas
 
 #### Step 1: Generate Certificate Signing Request (CSR)
 
+**Option A: Using Terminal (Recommended)**
+
+```bash
+# Generate private key and CSR
+openssl req -new -newkey rsa:2048 -nodes \
+  -keyout ios_distribution.key \
+  -out CertificateSigningRequest.certSigningRequest \
+  -subj "/emailAddress=your@email.com/CN=Your Full Name/O=Your Company Name/C=US"
+# CN = Your personal name (e.g., "John Smith")
+# O = Your company/organization name (optional)
+# C = Country code (e.g., "US")
+```
+
+This creates:
+
+- `ios_distribution.key` - Your private key (keep this secure!)
+- `CertificateSigningRequest.certSigningRequest` - CSR to upload to Apple
+
+**Option B: Using Keychain Access (GUI)**
+
 1. Open **Keychain Access** (Mac)
 2. Menu: **Keychain Access → Certificate Assistant → Request a Certificate From a Certificate Authority**
 3. Enter your email address
@@ -68,20 +88,39 @@ Your iOS Distribution Certificate exported as `.p12` file, then converted to bas
 6. Click **Continue**
 7. Download the certificate (`.cer` file)
 
-#### Step 3: Install Certificate in Keychain
+#### Step 3: Install Certificate and Create .p12
+
+**Option A: Using Terminal (Recommended)**
+
+```bash
+# Convert the .cer to .pem
+openssl x509 -in distribution.cer -inform DER -out distribution.pem -outform PEM
+
+# Combine certificate and private key into .p12
+openssl pkcs12 -export \
+  -inkey ios_distribution.key \
+  -in distribution.pem \
+  -out distribution.p12 \
+  -name "iOS Distribution Certificate"
+# Enter a password when prompted - save this password!
+```
+
+You now have `distribution.p12` ready to convert to base64. **Skip to Step 5**.
+
+**Option B: Using Keychain Access (GUI)**
 
 1. Double-click the downloaded `.cer` file
 2. It will be added to your Keychain
 3. In Keychain Access, you should now see "Apple Distribution: Your Name (Team ID)"
 
-#### Step 4: Export as .p12
+#### Step 4: Export as .p12 (GUI method only)
 
 1. In **Keychain Access**, find the certificate you just installed
 2. **Important:** Expand the certificate (click the arrow) - you should see a private key underneath
 3. Select **both** the certificate AND the private key (hold Cmd and click both)
 4. Right-click → **"Export 2 items..."**
 5. File format: **Personal Information Exchange (.p12)**
-6. Save it (e.g., `distribution-cert.p12`)
+6. Save it (e.g., `distribution.p12`)
 7. Enter a password when prompted (save this password!)
 8. You may need to enter your Mac password to allow the export
 
@@ -90,13 +129,13 @@ Your iOS Distribution Certificate exported as `.p12` file, then converted to bas
 **Mac/Linux:**
 
 ```bash
-base64 -i distribution-cert.p12 | pbcopy
+base64 -i distribution.p12 | pbcopy
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("distribution-cert.p12")) | Set-Clipboard
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("distribution.p12")) | Set-Clipboard
 ```
 
 **Result:** Paste into GitHub Environment secret `APPLE_CERTIFICATE_BASE64` (one per environment)
