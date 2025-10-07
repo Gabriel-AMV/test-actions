@@ -71,6 +71,7 @@ jobs:
 
       - name: Run Expo Prebuild
         env:
+          NODE_ENV: production
           VERSION_CODE: ${{ github.run_number }}
           BUNDLE_ID: ${{ vars.BUNDLE_ID }}
           APP_NAME: ${{ vars.APP_NAME }}
