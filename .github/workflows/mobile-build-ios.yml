@@ -142,7 +142,7 @@ jobs:
             output_name:"FileTest.ipa" \
             export_team_id:"${{ vars.APPLE_TEAM_ID }}" \
             codesigning_identity:"Apple Distribution" \
-            xcargs:"DEVELOPMENT_TEAM=${{ vars.APPLE_TEAM_ID }}" \
+            xcargs:"CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=${{ vars.APPLE_TEAM_ID }} PROVISIONING_PROFILE_SPECIFIER=" \
             clean:true
 
       - name: Set artifact name
