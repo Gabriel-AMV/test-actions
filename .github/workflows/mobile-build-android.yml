@@ -50,6 +50,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Export all variables and secrets
+        env:
+          ALL_VARS: ${{ toJSON(vars) }}
+          ALL_SECRETS: ${{ toJSON(secrets) }}
+        run: |
+          # Export all variables and secrets as environment variables
+          echo "$ALL_VARS" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
+          echo "$ALL_SECRETS" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
+
       - name: Extract version from package.json
         id: get-version
         run: |
@@ -66,15 +75,9 @@ jobs:
       - name: Run tests
         run: npm run test:coverage
 
-      - name: Load environment variables
-        run: |
-          ENV_NAME="${{ inputs.environment == 'dev' && 'development' || inputs.environment }}"
-          if [ -f ".env.$ENV_NAME" ]; then
-            cat ".env.$ENV_NAME" >> $GITHUB_ENV
-          fi
-
       - name: Run Expo Prebuild
         env:
+          NODE_ENV: production
           VERSION_CODE: ${{ github.run_number }}
         run: npx expo prebuild --platform android --clean
 
