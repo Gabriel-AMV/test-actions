@@ -86,7 +86,9 @@ jobs:
 
       - name: Install CocoaPods
         working-directory: ios
-        run: pod install
+        run: |
+          pod repo update
+          pod install --repo-update
 
       - name: Setup Ruby (for Fastlane)
         uses: ruby/setup-ruby@v1
