@@ -1,6 +1,10 @@
 name: CI/CD - Mobile
 
-run-name: "CI/CD Mobile (${{ needs.determine-environment.outputs.environment-label }}) - ${{ github.event.head_commit.message || github.ref_name }}"
+run-name: "CI/CD Mobile - ${{ github.event.head_commit.message || github.ref_name }}"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 on:
   push:
