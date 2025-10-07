@@ -1,25 +1,25 @@
-name: CI/CD - UAT
+name: CI/CD - QA
 
 on:
   push:
     branches:
-      - uat
+      - qa
   workflow_dispatch:
 
 jobs:
   build-android:
-    name: Build Android (UAT)
-    uses: ./.github/workflows/builds/build-android.yml
+    name: Build Android (QA)
+    uses: ./.github/workflows/build-android.yml
     with:
-      environment: uat
+      environment: qa
       upload-artifact: true
     secrets: inherit
 
   build-ios:
-    name: Build iOS (UAT)
-    uses: ./.github/workflows/builds/build-ios.yml
+    name: Build iOS (QA)
+    uses: ./.github/workflows/build-ios.yml
     with:
-      environment: uat
+      environment: qa
       export-method: app-store
       upload-artifact: true
     secrets: inherit
@@ -27,20 +27,20 @@ jobs:
   # Uncomment to enable deployment (CD)
   # Note: build-android and build-ios already output artifact-name
   # deploy-android:
-  #   name: Deploy Android (UAT)
+  #   name: Deploy Android (QA)
   #   needs: build-android
   #   uses: ./.github/workflows/deployments/deploy-android.yml
   #   with:
-  #     environment: uat
+  #     environment: qa
   #     artifact-name: ${{ needs.build-android.outputs.artifact-name }}
   #     track: internal
   #   secrets: inherit
 
   # deploy-ios:
-  #   name: Deploy iOS (UAT)
+  #   name: Deploy iOS (QA)
   #   needs: build-ios
   #   uses: ./.github/workflows/deployments/deploy-ios.yml
   #   with:
-  #     environment: uat
+  #     environment: qa
   #     artifact-name: ${{ needs.build-ios.outputs.artifact-name }}
   #   secrets: inherit
