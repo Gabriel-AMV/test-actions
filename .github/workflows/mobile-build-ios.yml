@@ -128,9 +128,11 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
 
-          # extract provisioning profile UUID
+          # extract provisioning profile UUID and Name
           PP_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< $(security cms -D -i $PP_PATH))
+          PP_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin <<< $(security cms -D -i $PP_PATH))
           echo "PROVISIONING_PROFILE_UUID=$PP_UUID" >> $GITHUB_ENV
+          echo "PROVISIONING_PROFILE_NAME=$PP_NAME" >> $GITHUB_ENV
 
       - name: Build iOS IPA using Fastlane
         working-directory: ios
@@ -149,7 +151,7 @@ jobs:
             output_name:"FileTest.ipa" \
             export_team_id:"${{ vars.APPLE_TEAM_ID }}" \
             codesigning_identity:"Apple Distribution" \
-            export_options:"{method: '${{ inputs.export-method }}', teamID: '${{ vars.APPLE_TEAM_ID }}', provisioningProfiles: {'${{ env.BUNDLE_ID }}': '${{ env.PROVISIONING_PROFILE_UUID }}'}}" \
+            export_options:"{\"provisioningProfiles\":{\"${{ env.BUNDLE_ID }}\":\"${{ env.PROVISIONING_PROFILE_NAME }}\"}}" \
             xcargs:"CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=${{ vars.APPLE_TEAM_ID }} PROVISIONING_PROFILE=${{ env.PROVISIONING_PROFILE_UUID }}" \
             clean:true
 
