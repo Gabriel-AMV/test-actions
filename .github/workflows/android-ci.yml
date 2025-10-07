@@ -1,0 +1,118 @@
+name: Android CI/CD
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+        description: 'Environment: dev, qa, uat, or production'
+      track:
+        required: false
+        type: string
+        default: 'internal'
+        description: 'Play Store track: internal, alpha, beta, production'
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: true
+      ANDROID_KEYSTORE_PASSWORD:
+        required: true
+      ANDROID_KEY_ALIAS:
+        required: true
+      ANDROID_KEY_PASSWORD:
+        required: true
+      PLAY_STORE_SERVICE_ACCOUNT_JSON:
+        required: true
+      SENTRY_AUTH_TOKEN:
+        required: false
+
+  push:
+    branches:
+      - develop  # dev environment
+      - qa       # qa environment
+      - uat      # uat environment
+
+  create:
+    tags:
+      - 'v*.*.*'  # production environment
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Android
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || (github.ref == 'refs/heads/develop' && 'dev') || (github.ref == 'refs/heads/qa' && 'qa') || (github.ref == 'refs/heads/uat' && 'uat') || 'production' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Load environment variables
+        run: |
+          ENV_NAME="${{ inputs.environment || (github.ref == 'refs/heads/develop' && 'development') || (github.ref == 'refs/heads/qa' && 'qa') || (github.ref == 'refs/heads/uat' && 'uat') || 'production' }}"
+          if [ -f ".env.$ENV_NAME" ]; then
+            cat ".env.$ENV_NAME" >> $GITHUB_ENV
+          fi
+
+      - name: Run Expo Prebuild
+        run: npx expo prebuild --platform android --clean
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Decode and setup keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
+          echo "" >> android/gradle.properties
+          echo "RELEASE_STORE_FILE=../keystore.jks" >> android/gradle.properties
+          echo "RELEASE_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> android/gradle.properties
+          echo "RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/gradle.properties
+          echo "RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/gradle.properties
+
+      - name: Build Android AAB
+        working-directory: android
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: ./gradlew bundleRelease
+
+      # Uncomment to enable Play Store upload
+      # - name: Setup Ruby (for Fastlane)
+      #   uses: ruby/setup-ruby@v1
+      #   with:
+      #     ruby-version: '3.2'
+
+      # - name: Install Fastlane
+      #   run: gem install fastlane
+
+      # - name: Upload to Play Store
+      #   run: |
+      #     echo '${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}' > service_account.json
+
+      #     fastlane supply \
+      #       --aab android/app/build/outputs/bundle/release/app-release.aab \
+      #       --track "${{ inputs.track || 'internal' }}" \
+      #       --package_name "${{ vars.PACKAGE_NAME }}" \
+      #       --json_key service_account.json \
+      #       --skip_upload_metadata \
+      #       --skip_upload_images \
+      #       --skip_upload_screenshots
+
+      #     rm service_account.json
+
+      - name: Cleanup
+        if: always()
+        run: rm -f keystore.jks
