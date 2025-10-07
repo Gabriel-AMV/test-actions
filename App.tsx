@@ -75,7 +75,7 @@ export default Sentry.wrap(function App() {
   useEffect(() => {
     async function initialize() {
       try {
-        logger.info('Initializing app...');
+        logger.info('Initializing app....');
 
         // Initialize database
         await initDatabase();
