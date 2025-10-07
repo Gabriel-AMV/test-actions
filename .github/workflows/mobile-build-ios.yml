@@ -69,19 +69,12 @@ jobs:
       - name: Run tests
         run: npm run test:coverage
 
-      - name: Load environment variables
-        run: |
-          ENV_NAME="${{ inputs.environment == 'dev' && 'development' || inputs.environment }}"
-          if [ -f ".env.$ENV_NAME" ]; then
-            cat ".env.$ENV_NAME" >> $GITHUB_ENV
-          fi
-
       - name: Run Expo Prebuild
         env:
           VERSION_CODE: ${{ github.run_number }}
-          BUNDLE_ID: ${{ env.BUNDLE_ID }}
-          APP_NAME: ${{ env.APP_NAME }}
-          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
+          BUNDLE_ID: ${{ vars.BUNDLE_ID }}
+          APP_NAME: ${{ vars.APP_NAME }}
+          PACKAGE_NAME: ${{ vars.PACKAGE_NAME }}
         run: npx expo prebuild --platform ios --clean
 
       - name: Install CocoaPods
