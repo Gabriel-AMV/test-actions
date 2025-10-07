@@ -140,6 +140,7 @@ jobs:
             output_name:"FileTest.ipa" \
             export_team_id:"${{ vars.APPLE_TEAM_ID }}" \
             codesigning_identity:"Apple Distribution" \
+            export_xcargs:"-allowProvisioningUpdates DEVELOPMENT_TEAM=${{ vars.APPLE_TEAM_ID }}" \
             clean:true
 
       - name: Set artifact name
