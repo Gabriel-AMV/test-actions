@@ -26,16 +26,6 @@ on:
       SENTRY_AUTH_TOKEN:
         required: false
 
-  push:
-    branches:
-      - develop  # dev environment
-      - qa       # qa environment
-      - uat      # uat environment
-
-  create:
-    tags:
-      - 'v*.*.*'  # production environment
-
 jobs:
   build-and-deploy:
     name: Build & Deploy Android
