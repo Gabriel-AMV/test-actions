@@ -149,6 +149,7 @@ jobs:
             output_name:"FileTest.ipa" \
             export_team_id:"${{ vars.APPLE_TEAM_ID }}" \
             codesigning_identity:"Apple Distribution" \
+            export_options:"{method: '${{ inputs.export-method }}', teamID: '${{ vars.APPLE_TEAM_ID }}', provisioningProfiles: {'${{ env.BUNDLE_ID }}': '${{ env.PROVISIONING_PROFILE_UUID }}'}}" \
             xcargs:"CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=${{ vars.APPLE_TEAM_ID }} PROVISIONING_PROFILE=${{ env.PROVISIONING_PROFILE_UUID }}" \
             clean:true
 
