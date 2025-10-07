@@ -1,5 +1,7 @@
 name: CI/CD - UAT
 
+run-name: "CI/CD Mobile (UAT) - ${{ github.event.head_commit.message }}"
+
 on:
   push:
     branches:

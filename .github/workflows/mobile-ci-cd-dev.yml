@@ -1,5 +1,7 @@
 name: CI/CD - Development
 
+run-name: "CI/CD Mobile (DEV) - ${{ github.event.head_commit.message }}"
+
 on:
   push:
     branches:
