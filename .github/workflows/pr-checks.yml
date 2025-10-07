@@ -1,0 +1,53 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+      - qa
+      - uat
+
+jobs:
+  # Determine target environment based on PR target branch
+  determine-environment:
+    name: Determine Environment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+    steps:
+      - name: Set environment based on target branch
+        id: set-env
+        run: |
+          TARGET_BRANCH="${{ github.base_ref }}"
+
+          if [ "$TARGET_BRANCH" = "develop" ]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          elif [ "$TARGET_BRANCH" = "qa" ]; then
+            echo "environment=qa" >> $GITHUB_OUTPUT
+          elif [ "$TARGET_BRANCH" = "uat" ]; then
+            echo "environment=uat" >> $GITHUB_OUTPUT
+          elif [ "$TARGET_BRANCH" = "main" ]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          fi
+
+  validate-android:
+    name: Validate Android
+    needs: determine-environment
+    uses: ./.github/workflows/builds/build-android.yml
+    with:
+      environment: ${{ needs.determine-environment.outputs.environment }}
+      upload-artifact: false  # Don't upload artifacts for PR validation
+    secrets: inherit  # Pass all secrets from the determined environment
+
+  validate-ios:
+    name: Validate iOS
+    needs: determine-environment
+    uses: ./.github/workflows/builds/build-ios.yml
+    with:
+      environment: ${{ needs.determine-environment.outputs.environment }}
+      export-method: app-store
+      upload-artifact: false  # Don't upload artifacts for PR validation
+    secrets: inherit  # Pass all secrets from the determined environment

@@ -1,4 +1,4 @@
-name: iOS CI/CD
+name: Build iOS
 
 on:
   workflow_call:
@@ -12,6 +12,15 @@ on:
         type: string
         default: 'app-store'
         description: 'Export method: app-store, ad-hoc, development'
+      upload-artifact:
+        required: false
+        type: boolean
+        default: true
+        description: 'Whether to upload the built artifact'
+    outputs:
+      artifact-name:
+        description: 'Name of the uploaded artifact'
+        value: ${{ jobs.build.outputs.artifact-name }}
     secrets:
       APPLE_CERTIFICATE_BASE64:
         required: true
@@ -21,20 +30,17 @@ on:
         required: true
       APPLE_TEAM_ID:
         required: true
-      APP_STORE_CONNECT_API_KEY_ID:
-        required: true
-      APP_STORE_CONNECT_ISSUER_ID:
-        required: true
-      APP_STORE_CONNECT_API_KEY_CONTENT:
-        required: true
       SENTRY_AUTH_TOKEN:
         required: false
 
 jobs:
-  build-and-deploy:
-    name: Build & Deploy iOS
+  build:
+    name: Build iOS (${{ inputs.environment }})
     runs-on: macos-latest
-    environment: ${{ inputs.environment || (github.ref == 'refs/heads/develop' && 'dev') || (github.ref == 'refs/heads/qa' && 'qa') || (github.ref == 'refs/heads/uat' && 'uat') || 'production' }}
+    environment: ${{ inputs.environment }}
+
+    outputs:
+      artifact-name: ${{ steps.set-artifact-name.outputs.artifact-name }}
 
     steps:
       - name: Checkout code
@@ -49,14 +55,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Extract version from package.json
+        id: get-version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm run test:coverage
+
       - name: Load environment variables
         run: |
-          ENV_NAME="${{ inputs.environment || (github.ref == 'refs/heads/develop' && 'development') || (github.ref == 'refs/heads/qa' && 'qa') || (github.ref == 'refs/heads/uat' && 'uat') || 'production' }}"
+          ENV_NAME="${{ inputs.environment == 'dev' && 'development' || inputs.environment }}"
           if [ -f ".env.$ENV_NAME" ]; then
             cat ".env.$ENV_NAME" >> $GITHUB_ENV
           fi
 
       - name: Run Expo Prebuild
+        env:
+          VERSION_CODE: ${{ github.run_number }}
         run: npx expo prebuild --platform ios --clean
 
       - name: Install CocoaPods
@@ -96,30 +120,37 @@ jobs:
         working-directory: ios
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          VERSION_NAME: ${{ steps.get-version.outputs.version }}
+          VERSION_CODE: ${{ github.run_number }}
         run: |
           fastlane run build_app \
             scheme:"FileTest" \
             configuration:"Release" \
-            export_method:"${{ inputs.export-method || 'app-store' }}" \
+            export_method:"${{ inputs.export-method }}" \
             output_directory:"export" \
             output_name:"FileTest.ipa" \
             export_team_id:"${{ secrets.APPLE_TEAM_ID }}" \
             codesigning_identity:"iPhone Distribution" \
             clean:true
 
-      # Uncomment to enable TestFlight upload
-      # - name: Upload to TestFlight using Fastlane
-      #   run: |
-      #     mkdir -p ~/.appstoreconnect/private_keys
-      #     echo "${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}" > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8
+      - name: Set artifact name
+        if: inputs.upload-artifact
+        id: set-artifact-name
+        run: |
+          VERSION="${{ steps.get-version.outputs.version }}"
+          ARTIFACT_NAME="ios-${{ inputs.environment }}-${VERSION}-${{ github.run_number }}"
+          echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+          echo "Artifact name: $ARTIFACT_NAME"
 
-      #     fastlane pilot upload \
-      #       --ipa ios/export/FileTest.ipa \
-      #       --api_key_path ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8 \
-      #       --skip_waiting_for_build_processing
+      - name: Upload artifact
+        if: inputs.upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.set-artifact-name.outputs.artifact-name }}
+          path: ios/export/FileTest.ipa
+          retention-days: 30
 
       - name: Cleanup
         if: always()
         run: |
           security delete-keychain build.keychain || true
-          # rm -rf ~/.appstoreconnect/private_keys

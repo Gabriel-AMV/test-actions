@@ -1,0 +1,46 @@
+name: CI/CD - Production
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android (Production)
+    uses: ./.github/workflows/builds/build-android.yml
+    with:
+      environment: production
+      upload-artifact: true
+    secrets: inherit
+
+  build-ios:
+    name: Build iOS (Production)
+    uses: ./.github/workflows/builds/build-ios.yml
+    with:
+      environment: production
+      export-method: app-store
+      upload-artifact: true
+    secrets: inherit
+
+  # Uncomment to enable deployment (CD)
+  # Note: build-android and build-ios already output artifact-name
+  # deploy-android:
+  #   name: Deploy Android (Production)
+  #   needs: build-android
+  #   uses: ./.github/workflows/deployments/deploy-android.yml
+  #   with:
+  #     environment: production
+  #     artifact-name: ${{ needs.build-android.outputs.artifact-name }}
+  #     track: internal
+  #   secrets: inherit
+
+  # deploy-ios:
+  #   name: Deploy iOS (Production)
+  #   needs: build-ios
+  #   uses: ./.github/workflows/deployments/deploy-ios.yml
+  #   with:
+  #     environment: production
+  #     artifact-name: ${{ needs.build-ios.outputs.artifact-name }}
+  #   secrets: inherit

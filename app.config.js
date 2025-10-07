@@ -1,3 +1,5 @@
+const packageJson = require('./package.json');
+
 module.exports = {
   expo: {
     extra: {
@@ -7,7 +9,7 @@ module.exports = {
     },
     name: process.env.APP_NAME || 'FileTest',
     slug: 'FileTest',
-    version: '1.0.0',
+    version: packageJson.version,
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
@@ -20,6 +22,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: process.env.BUNDLE_ID || 'com.anonymous.FileTest',
+      buildNumber: process.env.VERSION_CODE || '1',
     },
     android: {
       adaptiveIcon: {
@@ -28,6 +31,7 @@ module.exports = {
       },
       edgeToEdgeEnabled: true,
       package: process.env.PACKAGE_NAME || 'com.anonymous.FileTest',
+      versionCode: parseInt(process.env.VERSION_CODE || '1', 10),
     },
     web: {
       favicon: './assets/favicon.png',

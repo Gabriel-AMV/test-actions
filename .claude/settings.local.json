@@ -6,7 +6,9 @@
       "Bash(npm run lint)",
       "Bash(mkdir:*)",
       "WebFetch(domain:docs.expo.dev)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "WebSearch",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []

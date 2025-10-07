@@ -1,0 +1,46 @@
+name: CI/CD - Development
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android (Dev)
+    uses: ./.github/workflows/builds/build-android.yml
+    with:
+      environment: dev
+      upload-artifact: true
+    secrets: inherit
+
+  build-ios:
+    name: Build iOS (Dev)
+    uses: ./.github/workflows/builds/build-ios.yml
+    with:
+      environment: dev
+      export-method: app-store
+      upload-artifact: true
+    secrets: inherit
+
+  # Uncomment to enable deployment (CD)
+  # Note: build-android and build-ios already output artifact-name
+  # deploy-android:
+  #   name: Deploy Android (Dev)
+  #   needs: build-android
+  #   uses: ./.github/workflows/deployments/deploy-android.yml
+  #   with:
+  #     environment: dev
+  #     artifact-name: ${{ needs.build-android.outputs.artifact-name }}
+  #     track: internal
+  #   secrets: inherit
+
+  # deploy-ios:
+  #   name: Deploy iOS (Dev)
+  #   needs: build-ios
+  #   uses: ./.github/workflows/deployments/deploy-ios.yml
+  #   with:
+  #     environment: dev
+  #     artifact-name: ${{ needs.build-ios.outputs.artifact-name }}
+  #   secrets: inherit

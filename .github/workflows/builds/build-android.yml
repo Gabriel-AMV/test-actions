@@ -1,4 +1,4 @@
-name: Android CI/CD
+name: Build Android
 
 on:
   workflow_call:
@@ -7,11 +7,15 @@ on:
         required: true
         type: string
         description: 'Environment: dev, qa, uat, or production'
-      track:
+      upload-artifact:
         required: false
-        type: string
-        default: 'internal'
-        description: 'Play Store track: internal, alpha, beta, production'
+        type: boolean
+        default: true
+        description: 'Whether to upload the built artifact'
+    outputs:
+      artifact-name:
+        description: 'Name of the uploaded artifact'
+        value: ${{ jobs.build.outputs.artifact-name }}
     secrets:
       ANDROID_KEYSTORE_BASE64:
         required: true
@@ -21,16 +25,17 @@ on:
         required: true
       ANDROID_KEY_PASSWORD:
         required: true
-      PLAY_STORE_SERVICE_ACCOUNT_JSON:
-        required: true
       SENTRY_AUTH_TOKEN:
         required: false
 
 jobs:
-  build-and-deploy:
-    name: Build & Deploy Android
+  build:
+    name: Build Android (${{ inputs.environment }})
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment || (github.ref == 'refs/heads/develop' && 'dev') || (github.ref == 'refs/heads/qa' && 'qa') || (github.ref == 'refs/heads/uat' && 'uat') || 'production' }}
+    environment: ${{ inputs.environment }}
+
+    outputs:
+      artifact-name: ${{ steps.set-artifact-name.outputs.artifact-name }}
 
     steps:
       - name: Checkout code
@@ -45,14 +50,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Extract version from package.json
+        id: get-version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm run test:coverage
+
       - name: Load environment variables
         run: |
-          ENV_NAME="${{ inputs.environment || (github.ref == 'refs/heads/develop' && 'development') || (github.ref == 'refs/heads/qa' && 'qa') || (github.ref == 'refs/heads/uat' && 'uat') || 'production' }}"
+          ENV_NAME="${{ inputs.environment == 'dev' && 'development' || inputs.environment }}"
           if [ -f ".env.$ENV_NAME" ]; then
             cat ".env.$ENV_NAME" >> $GITHUB_ENV
           fi
 
       - name: Run Expo Prebuild
+        env:
+          VERSION_CODE: ${{ github.run_number }}
         run: npx expo prebuild --platform android --clean
 
       - name: Setup Java
@@ -77,31 +100,26 @@ jobs:
         working-directory: android
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          VERSION_NAME: ${{ steps.get-version.outputs.version }}
+          VERSION_CODE: ${{ github.run_number }}
         run: ./gradlew bundleRelease
 
-      # Uncomment to enable Play Store upload
-      # - name: Setup Ruby (for Fastlane)
-      #   uses: ruby/setup-ruby@v1
-      #   with:
-      #     ruby-version: '3.2'
+      - name: Set artifact name
+        if: inputs.upload-artifact
+        id: set-artifact-name
+        run: |
+          VERSION="${{ steps.get-version.outputs.version }}"
+          ARTIFACT_NAME="android-${{ inputs.environment }}-${VERSION}-${{ github.run_number }}"
+          echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+          echo "Artifact name: $ARTIFACT_NAME"
 
-      # - name: Install Fastlane
-      #   run: gem install fastlane
-
-      # - name: Upload to Play Store
-      #   run: |
-      #     echo '${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}' > service_account.json
-
-      #     fastlane supply \
-      #       --aab android/app/build/outputs/bundle/release/app-release.aab \
-      #       --track "${{ inputs.track || 'internal' }}" \
-      #       --package_name "${{ vars.PACKAGE_NAME }}" \
-      #       --json_key service_account.json \
-      #       --skip_upload_metadata \
-      #       --skip_upload_images \
-      #       --skip_upload_screenshots
-
-      #     rm service_account.json
+      - name: Upload artifact
+        if: inputs.upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.set-artifact-name.outputs.artifact-name }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
 
       - name: Cleanup
         if: always()
