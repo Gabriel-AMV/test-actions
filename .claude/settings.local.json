@@ -8,7 +8,11 @@
       "WebFetch(domain:docs.expo.dev)",
       "Bash(rm:*)",
       "WebSearch",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "WebFetch(domain:docs.github.com)",
+      "WebFetch(domain:stackoverflow.com)",
+      "WebFetch(domain:capgo.app)",
+      "WebFetch(domain:docs.fastlane.tools)"
     ],
     "deny": [],
     "ask": []
