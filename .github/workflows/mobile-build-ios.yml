@@ -132,7 +132,9 @@ jobs:
           VERSION_NAME: ${{ steps.get-version.outputs.version }}
           VERSION_CODE: ${{ github.run_number }}
         run: |
+          # Build and archive
           fastlane run build_app \
+            workspace:"FileTest.xcworkspace" \
             scheme:"FileTest" \
             configuration:"Release" \
             export_method:"${{ inputs.export-method }}" \
@@ -140,6 +142,7 @@ jobs:
             output_name:"FileTest.ipa" \
             export_team_id:"${{ vars.APPLE_TEAM_ID }}" \
             codesigning_identity:"Apple Distribution" \
+            xcargs:"DEVELOPMENT_TEAM=${{ vars.APPLE_TEAM_ID }}" \
             clean:true
 
       - name: Set artifact name
