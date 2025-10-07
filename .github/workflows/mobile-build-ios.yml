@@ -62,6 +62,12 @@ jobs:
           echo "$ALL_VARS" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
           echo "$ALL_SECRETS" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
 
+      - name: Debug environment variables
+        run: |
+          echo "BUNDLE_ID: $BUNDLE_ID"
+          echo "PACKAGE_NAME: $PACKAGE_NAME"
+          echo "APP_NAME: $APP_NAME"
+
       - name: Extract version from package.json
         id: get-version
         run: |
