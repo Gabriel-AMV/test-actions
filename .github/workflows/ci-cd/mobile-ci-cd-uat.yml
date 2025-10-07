@@ -9,7 +9,7 @@ on:
 jobs:
   build-android:
     name: Build Android (UAT)
-    uses: ./.github/workflows/build-android.yml
+    uses: ./.github/workflows/mobile-build-android.yml
     with:
       environment: uat
       upload-artifact: true
@@ -17,7 +17,7 @@ jobs:
 
   build-ios:
     name: Build iOS (UAT)
-    uses: ./.github/workflows/build-ios.yml
+    uses: ./.github/workflows/mobile-build-ios.yml
     with:
       environment: uat
       export-method: app-store

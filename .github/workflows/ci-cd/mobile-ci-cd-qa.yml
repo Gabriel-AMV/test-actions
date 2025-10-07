@@ -9,7 +9,7 @@ on:
 jobs:
   build-android:
     name: Build Android (QA)
-    uses: ./.github/workflows/build-android.yml
+    uses: ./.github/workflows/mobile-build-android.yml
     with:
       environment: qa
       upload-artifact: true
@@ -17,7 +17,7 @@ jobs:
 
   build-ios:
     name: Build iOS (QA)
-    uses: ./.github/workflows/build-ios.yml
+    uses: ./.github/workflows/mobile-build-ios.yml
     with:
       environment: qa
       export-method: app-store
