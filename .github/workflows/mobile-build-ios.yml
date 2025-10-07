@@ -79,6 +79,9 @@ jobs:
       - name: Run Expo Prebuild
         env:
           VERSION_CODE: ${{ github.run_number }}
+          BUNDLE_ID: ${{ env.BUNDLE_ID }}
+          APP_NAME: ${{ env.APP_NAME }}
+          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
         run: npx expo prebuild --platform ios --clean
 
       - name: Install CocoaPods
