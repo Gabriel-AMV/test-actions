@@ -54,8 +54,9 @@ jobs:
           ALL_SECRETS: ${{ toJSON(secrets) }}
         run: |
           # Export all variables and secrets as environment variables
-          echo "$ALL_VARS" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
-          echo "$ALL_SECRETS" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
+          # Use @base64 encoding for values to handle multi-line content safely
+          echo "$ALL_VARS" | jq -r 'to_entries[] | "\(.key)<<EOF\n\(.value)\nEOF"' >> $GITHUB_ENV
+          echo "$ALL_SECRETS" | jq -r 'to_entries[] | "\(.key)<<EOF\n\(.value)\nEOF"' >> $GITHUB_ENV
 
       - name: Debug environment variables
         run: |

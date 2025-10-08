@@ -15,7 +15,6 @@ on:
       - uat
 
 jobs:
-  # Determine target environment based on PR target branch
   determine-environment:
     name: Determine Environment
     runs-on: ubuntu-latest
