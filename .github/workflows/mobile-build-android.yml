@@ -95,21 +95,21 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Decode and setup keystore
+      - name: Decode keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
-          echo "" >> android/gradle.properties
-          echo "RELEASE_STORE_FILE=../keystore.jks" >> android/gradle.properties
-          echo "RELEASE_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> android/gradle.properties
-          echo "RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/gradle.properties
-          echo "RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/gradle.properties
 
-      - name: Build Android AAB
+      - name: Build Android AAB with release signing
         working-directory: android
         env:
           VERSION_NAME: ${{ steps.get-version.outputs.version }}
           VERSION_CODE: ${{ github.run_number }}
-        run: ./gradlew bundleRelease
+        run: |
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=../keystore.jks \
+            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
 
       - name: Set artifact name
         if: inputs.upload-artifact
