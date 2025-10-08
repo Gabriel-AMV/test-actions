@@ -1,0 +1,66 @@
+name: Deploy iOS to App Store
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+        description: 'Environment: dev, qa, uat, or production'
+      artifact-name:
+        required: true
+        type: string
+        description: 'Name of the artifact to deploy'
+    secrets:
+      APPLE_APP_STORE_CONNECT_API_KEY_ID:
+        required: true
+      APPLE_APP_STORE_CONNECT_API_ISSUER_ID:
+        required: true
+      APPLE_APP_STORE_CONNECT_API_KEY_CONTENT:
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy to App Store (${{ inputs.environment }})
+    runs-on: macos-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ./artifacts
+
+      - name: Setup Ruby (for Fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Install Fastlane
+        run: gem install fastlane
+
+      - name: Create App Store Connect API Key
+        env:
+          API_KEY_CONTENT: ${{ secrets.APPLE_APP_STORE_CONNECT_API_KEY_CONTENT }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$API_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_APP_STORE_CONNECT_API_KEY_ID }}.p8
+
+      - name: Deploy to App Store using Fastlane
+        env:
+          APPLE_APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_API_KEY_ID }}
+          APPLE_APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_API_ISSUER_ID }}
+        run: |
+          fastlane pilot upload \
+            --ipa ./artifacts/FileTest.ipa \
+            --api_key_path ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_APP_STORE_CONNECT_API_KEY_ID }}.p8 \
+            --skip_submission \
+            --skip_waiting_for_build_processing
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf ~/.appstoreconnect/private_keys
