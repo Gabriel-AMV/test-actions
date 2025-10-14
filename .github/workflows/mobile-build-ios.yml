@@ -31,6 +31,11 @@ on:
       SENTRY_AUTH_TOKEN:
         required: false
 
+env:
+  APP_NAME: ${{ vars.APP_NAME }}
+  BUNDLE_ID: ${{ vars.BUNDLE_ID }}
+  PACKAGE_NAME: ${{ vars.PACKAGE_NAME }}
+
 jobs:
   build:
     name: Build iOS (${{ inputs.environment }})
@@ -57,22 +62,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Export all variables and secrets
-        env:
-          ALL_VARS: ${{ toJSON(vars) }}
-          ALL_SECRETS: ${{ toJSON(secrets) }}
-        run: |
-          # Export all variables and secrets as environment variables
-          # Use heredoc syntax to handle multi-line content safely
-          echo "$ALL_VARS" | jq -r 'to_entries[] | "\(.key)<<EOF\n\(.value)\nEOF"' >> $GITHUB_ENV
-          echo "$ALL_SECRETS" | jq -r 'to_entries[] | "\(.key)<<EOF\n\(.value)\nEOF"' >> $GITHUB_ENV
-
-      - name: Debug environment variables
-        run: |
-          echo "BUNDLE_ID: $BUNDLE_ID"
-          echo "PACKAGE_NAME: $PACKAGE_NAME"
-          echo "APP_NAME: $APP_NAME"
 
       - name: Extract version from package.json
         id: get-version
@@ -153,25 +142,26 @@ jobs:
           VERSION_NAME: ${{ steps.get-version.outputs.version }}
           VERSION_CODE: ${{ github.run_number }}
         run: |
+          # Detect workspace file (Expo removes spaces from workspace names)
+          WORKSPACE_FILE=$(ls -1 *.xcworkspace | head -n 1 | sed 's/.xcworkspace$//')
+          SCHEME_NAME="${APP_NAME}"
+
+          echo "Using workspace: ${WORKSPACE_FILE}.xcworkspace"
+          echo "Using scheme: ${SCHEME_NAME}"
+
           # Build and archive
           fastlane run build_app \
-            workspace:"${{ env.APP_NAME }}.xcworkspace" \
-            scheme:"${{ env.APP_NAME }}" \
+            workspace:"${WORKSPACE_FILE}.xcworkspace" \
+            scheme:"${SCHEME_NAME}" \
             configuration:"Release" \
             export_method:"${{ inputs.export-method }}" \
             output_directory:"export" \
-            output_name:"${{ env.APP_NAME }}.ipa" \
+            output_name:"${APP_NAME}.ipa" \
             export_team_id:"${{ vars.APPLE_TEAM_ID }}" \
             codesigning_identity:"Apple Distribution" \
-            export_options:"{\"provisioningProfiles\":{\"${{ env.BUNDLE_ID }}\":\"${{ env.PROVISIONING_PROFILE_NAME }}\"}}" \
-            xcargs:"CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=${{ vars.APPLE_TEAM_ID }} PROVISIONING_PROFILE=${{ env.PROVISIONING_PROFILE_UUID }}" \
+            export_options:"{\"provisioningProfiles\":{\"${BUNDLE_ID}\":\"${PROVISIONING_PROFILE_NAME}\"}}" \
+            xcargs:"CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=${{ vars.APPLE_TEAM_ID }} PROVISIONING_PROFILE=${PROVISIONING_PROFILE_UUID}" \
             clean:true
-
-      - name: Output build logs on failure
-        if: failure()
-        run: |
-          echo "=== Build log ==="
-          cat ~/Library/Logs/gym/${{ env.APP_NAME }}-${{ env.APP_NAME }}.log || echo "Log file not found"
 
       - name: Set artifact name
         if: inputs.upload-artifact

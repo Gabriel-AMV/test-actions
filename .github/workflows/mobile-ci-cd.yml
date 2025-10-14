@@ -29,6 +29,7 @@ jobs:
       environment: ${{ steps.set-env.outputs.environment }}
       environment-label: ${{ steps.set-env.outputs.environment-label }}
       export-method: ${{ steps.set-env.outputs.export-method }}
+      android-build-type: ${{ steps.set-env.outputs.android-build-type }}
     steps:
       - name: Set environment based on branch or tag
         id: set-env
@@ -37,26 +38,32 @@ jobs:
             echo "environment=production" >> $GITHUB_OUTPUT
             echo "environment-label=PROD" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
+            echo "android-build-type=both" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
             echo "environment=production" >> $GITHUB_OUTPUT
             echo "environment-label=PROD" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
+            echo "android-build-type=both" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == refs/heads/uat ]]; then
             echo "environment=uat" >> $GITHUB_OUTPUT
             echo "environment-label=UAT" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
+            echo "android-build-type=both" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == refs/heads/qa ]]; then
             echo "environment=qa" >> $GITHUB_OUTPUT
             echo "environment-label=QA" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
+            echo "android-build-type=apk" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == refs/heads/develop ]]; then
             echo "environment=dev" >> $GITHUB_OUTPUT
             echo "environment-label=DEV" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
+            echo "android-build-type=apk" >> $GITHUB_OUTPUT
           else
             echo "environment=dev" >> $GITHUB_OUTPUT
             echo "environment-label=DEV" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
+            echo "android-build-type=apk" >> $GITHUB_OUTPUT
           fi
 
   build-android:
@@ -65,6 +72,7 @@ jobs:
     uses: ./.github/workflows/mobile-build-android.yml
     with:
       environment: ${{ needs.determine-environment.outputs.environment }}
+      build-type: ${{ needs.determine-environment.outputs.android-build-type }}
       upload-artifact: true
     secrets: inherit
 
