@@ -12,6 +12,11 @@ on:
         type: boolean
         default: true
         description: 'Whether to upload the built artifact'
+      build-type:
+        required: false
+        type: string
+        default: 'aab'
+        description: 'Build type: aab, apk, or both'
     outputs:
       artifact-name:
         description: 'Name of the uploaded artifact'
@@ -25,6 +30,8 @@ on:
         required: true
       ANDROID_KEY_PASSWORD:
         required: true
+      SENTRY_AUTH_TOKEN:
+        required: true
 
 jobs:
   build:
@@ -35,34 +42,29 @@ jobs:
     outputs:
       artifact-name: ${{ steps.set-artifact-name.outputs.artifact-name }}
 
+    defaults:
+      run:
+        working-directory: ./src/mobile/mobile-sop
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Export all environment variables
+        env:
+          VARS_CONTEXT: ${{ toJson(vars) }}
+        run: |
+          echo "$VARS_CONTEXT" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: './src/mobile/mobile-sop/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Export all variables and secrets
-        env:
-          ALL_VARS: ${{ toJSON(vars) }}
-          ALL_SECRETS: ${{ toJSON(secrets) }}
-        run: |
-          # Export all variables and secrets as environment variables
-          # Use @base64 encoding for values to handle multi-line content safely
-          echo "$ALL_VARS" | jq -r 'to_entries[] | "\(.key)<<EOF\n\(.value)\nEOF"' >> $GITHUB_ENV
-          echo "$ALL_SECRETS" | jq -r 'to_entries[] | "\(.key)<<EOF\n\(.value)\nEOF"' >> $GITHUB_ENV
-
-      - name: Debug environment variables
-        run: |
-          echo "BUNDLE_ID: $BUNDLE_ID"
-          echo "PACKAGE_NAME: $PACKAGE_NAME"
-          echo "APP_NAME: $APP_NAME"
 
       - name: Extract version from package.json
         id: get-version
@@ -84,6 +86,7 @@ jobs:
         env:
           NODE_ENV: production
           VERSION_CODE: ${{ github.run_number }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: npx expo prebuild --platform android --clean
 
       - name: Setup Java
@@ -100,13 +103,29 @@ jobs:
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
 
       - name: Build Android AAB with release signing
-        working-directory: android
+        if: inputs.build-type == 'aab' || inputs.build-type == 'both'
+        working-directory: ./src/mobile/mobile-sop/android
         env:
           VERSION_NAME: ${{ steps.get-version.outputs.version }}
           VERSION_CODE: ${{ github.run_number }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=${{ github.workspace }}/keystore.jks \
+            -Pandroid.injected.signing.store.file=${{ github.workspace }}/src/mobile/mobile-sop/keystore.jks \
+            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
+
+      - name: Build Android APK with release signing
+        if: inputs.build-type == 'apk' || inputs.build-type == 'both'
+        working-directory: ./src/mobile/mobile-sop/android
+        env:
+          VERSION_NAME: ${{ steps.get-version.outputs.version }}
+          VERSION_CODE: ${{ github.run_number }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=${{ github.workspace }}/src/mobile/mobile-sop/keystore.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
@@ -116,16 +135,25 @@ jobs:
         id: set-artifact-name
         run: |
           VERSION="${{ steps.get-version.outputs.version }}"
-          ARTIFACT_NAME="android-${{ inputs.environment }}-${VERSION}-${{ github.run_number }}"
+          BUILD_TYPE="${{ inputs.build-type }}"
+          ARTIFACT_NAME="android-${BUILD_TYPE}-${{ inputs.environment }}-${VERSION}-${{ github.run_number }}"
           echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
           echo "Artifact name: $ARTIFACT_NAME"
 
-      - name: Upload artifact
-        if: inputs.upload-artifact
+      - name: Upload AAB artifact
+        if: inputs.upload-artifact && (inputs.build-type == 'aab' || inputs.build-type == 'both')
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.set-artifact-name.outputs.artifact-name }}
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          name: ${{ steps.set-artifact-name.outputs.artifact-name }}-aab
+          path: src/mobile/mobile-sop/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      - name: Upload APK artifact
+        if: inputs.upload-artifact && (inputs.build-type == 'apk' || inputs.build-type == 'both')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.set-artifact-name.outputs.artifact-name }}-apk
+          path: src/mobile/mobile-sop/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
       - name: Cleanup

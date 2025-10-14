@@ -15,6 +15,9 @@ on:
       - main
     tags:
       - 'v*.*.*'
+    paths:
+      - 'src/mobile/mobile-sop/**'
+      - '.github/workflows/mobile-*.yml'
   workflow_dispatch:
 
 jobs:
@@ -25,6 +28,7 @@ jobs:
       environment: ${{ steps.set-env.outputs.environment }}
       environment-label: ${{ steps.set-env.outputs.environment-label }}
       export-method: ${{ steps.set-env.outputs.export-method }}
+      android-build-type: ${{ steps.set-env.outputs.android-build-type }}
     steps:
       - name: Set environment based on branch or tag
         id: set-env
@@ -33,26 +37,32 @@ jobs:
             echo "environment=production" >> $GITHUB_OUTPUT
             echo "environment-label=PROD" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
+            echo "android-build-type=apk" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
             echo "environment=production" >> $GITHUB_OUTPUT
             echo "environment-label=PROD" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
+            echo "android-build-type=apk" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == refs/heads/uat ]]; then
             echo "environment=uat" >> $GITHUB_OUTPUT
             echo "environment-label=UAT" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
+            echo "android-build-type=apk" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == refs/heads/qa ]]; then
             echo "environment=qa" >> $GITHUB_OUTPUT
             echo "environment-label=QA" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
+            echo "android-build-type=apk" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == refs/heads/develop ]]; then
             echo "environment=dev" >> $GITHUB_OUTPUT
             echo "environment-label=DEV" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
+            echo "android-build-type=apk" >> $GITHUB_OUTPUT
           else
             echo "environment=dev" >> $GITHUB_OUTPUT
             echo "environment-label=DEV" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
+            echo "android-build-type=apk" >> $GITHUB_OUTPUT
           fi
 
   build-android:
@@ -61,6 +71,7 @@ jobs:
     uses: ./.github/workflows/mobile-build-android.yml
     with:
       environment: ${{ needs.determine-environment.outputs.environment }}
+      build-type: ${{ needs.determine-environment.outputs.android-build-type }}
       upload-artifact: true
     secrets: inherit
 
@@ -73,24 +84,3 @@ jobs:
       export-method: ${{ needs.determine-environment.outputs.export-method }}
       upload-artifact: true
     secrets: inherit
-
-  # Uncomment to enable deployment (CD)
-  # Note: build-android and build-ios already output artifact-name
-  deploy-android:
-    name: Deploy Android
-    needs: [determine-environment, build-android]
-    uses: ./.github/workflows/deploy-android.yml
-    with:
-      environment: ${{ needs.determine-environment.outputs.environment }}
-      artifact-name: ${{ needs.build-android.outputs.artifact-name }}
-      track: internal
-    secrets: inherit
-
-  # deploy-ios:
-  #   name: Deploy iOS
-  #   needs: [determine-environment, build-ios]
-  #   uses: ./.github/workflows/deploy-ios.yml
-  #   with:
-  #     environment: ${{ needs.determine-environment.outputs.environment }}
-  #     artifact-name: ${{ needs.build-ios.outputs.artifact-name }}
-  #   secrets: inherit
