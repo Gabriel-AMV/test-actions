@@ -18,7 +18,6 @@ on:
     paths:
       - 'src/mobile/mobile-sop/**'
       - '.github/workflows/mobile-*.yml'
-      - '.github/workflows/deploy-*.yml'
   workflow_dispatch:
 
 jobs:
@@ -85,24 +84,3 @@ jobs:
       export-method: ${{ needs.determine-environment.outputs.export-method }}
       upload-artifact: true
     secrets: inherit
-
-  # Uncomment to enable deployment (CD)
-  # Note: build-android and build-ios already output artifact-name
-  deploy-android:
-    name: Deploy Android
-    needs: [determine-environment, build-android]
-    uses: ./.github/workflows/deploy-android.yml
-    with:
-      environment: ${{ needs.determine-environment.outputs.environment }}
-      artifact-name: ${{ needs.build-android.outputs.artifact-name }}
-      track: internal
-    secrets: inherit
-
-  # deploy-ios:
-  #   name: Deploy iOS
-  #   needs: [determine-environment, build-ios]
-  #   uses: ./.github/workflows/deploy-ios.yml
-  #   with:
-  #     environment: ${{ needs.determine-environment.outputs.environment }}
-  #     artifact-name: ${{ needs.build-ios.outputs.artifact-name }}
-  #   secrets: inherit

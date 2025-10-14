@@ -16,7 +16,6 @@ on:
     paths:
       - 'src/mobile/mobile-sop/**'
       - '.github/workflows/mobile-*.yml'
-      - '.github/workflows/deploy-*.yml'
 
 jobs:
   determine-environment:
