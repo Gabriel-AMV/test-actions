@@ -12,11 +12,6 @@ on:
         type: boolean
         default: true
         description: 'Whether to upload the built artifact'
-      build-type:
-        required: false
-        type: string
-        default: 'aab'
-        description: 'Build type: aab, apk, or both'
     outputs:
       artifact-name:
         description: 'Name of the uploaded artifact'
@@ -102,22 +97,7 @@ jobs:
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
 
-      - name: Build Android AAB with release signing
-        if: inputs.build-type == 'aab' || inputs.build-type == 'both'
-        working-directory: ./src/mobile/mobile-sop/android
-        env:
-          VERSION_NAME: ${{ steps.get-version.outputs.version }}
-          VERSION_CODE: ${{ github.run_number }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: |
-          ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=${{ github.workspace }}/src/mobile/mobile-sop/keystore.jks \
-            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
-
       - name: Build Android APK with release signing
-        if: inputs.build-type == 'apk' || inputs.build-type == 'both'
         working-directory: ./src/mobile/mobile-sop/android
         env:
           VERSION_NAME: ${{ steps.get-version.outputs.version }}
@@ -135,24 +115,15 @@ jobs:
         id: set-artifact-name
         run: |
           VERSION="${{ steps.get-version.outputs.version }}"
-          BUILD_TYPE="${{ inputs.build-type }}"
-          ARTIFACT_NAME="android-${BUILD_TYPE}-${{ inputs.environment }}-${VERSION}-${{ github.run_number }}"
+          ARTIFACT_NAME="android-apk-${{ inputs.environment }}-${VERSION}-${{ github.run_number }}"
           echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
           echo "Artifact name: $ARTIFACT_NAME"
 
-      - name: Upload AAB artifact
-        if: inputs.upload-artifact && (inputs.build-type == 'aab' || inputs.build-type == 'both')
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.set-artifact-name.outputs.artifact-name }}-aab
-          path: src/mobile/mobile-sop/android/app/build/outputs/bundle/release/app-release.aab
-          retention-days: 30
-
       - name: Upload APK artifact
-        if: inputs.upload-artifact && (inputs.build-type == 'apk' || inputs.build-type == 'both')
+        if: inputs.upload-artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.set-artifact-name.outputs.artifact-name }}-apk
+          name: ${{ steps.set-artifact-name.outputs.artifact-name }}
           path: src/mobile/mobile-sop/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
