@@ -28,13 +28,6 @@ on:
         required: true
       APPLE_PROVISIONING_PROFILE_BASE64:
         required: true
-      SENTRY_AUTH_TOKEN:
-        required: false
-
-env:
-  APP_NAME: ${{ vars.APP_NAME }}
-  BUNDLE_ID: ${{ vars.BUNDLE_ID }}
-  PACKAGE_NAME: ${{ vars.PACKAGE_NAME }}
 
 jobs:
   build:
@@ -138,7 +131,6 @@ jobs:
       - name: Build iOS IPA using Fastlane
         working-directory: ./src/mobile/mobile-sop/ios
         env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           VERSION_NAME: ${{ steps.get-version.outputs.version }}
           VERSION_CODE: ${{ github.run_number }}
         run: |
