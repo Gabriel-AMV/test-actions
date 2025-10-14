@@ -41,7 +41,7 @@ jobs:
             # Map user-friendly names to actual GitHub environment names
             case "${{ inputs.manual-environment }}" in
               dev)
-                echo "environment=dev" >> $GITHUB_OUTPUT
+                echo "environment=DEV-Mobile" >> $GITHUB_OUTPUT
                 echo "environment-label=DEV" >> $GITHUB_OUTPUT
                 ;;
               uat)
@@ -77,12 +77,12 @@ jobs:
             echo "export-method=app-store" >> $GITHUB_OUTPUT
           # Gitflow: develop branch = dev environment
           elif [[ "${{ github.ref }}" == refs/heads/develop ]]; then
-            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "environment=DEV-Mobile" >> $GITHUB_OUTPUT
             echo "environment-label=DEV" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
           # Default to dev for any other branches
           else
-            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "environment=DEV-Mobile" >> $GITHUB_OUTPUT
             echo "environment-label=DEV" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
           fi
