@@ -30,6 +30,8 @@ on:
         required: true
       ANDROID_KEY_PASSWORD:
         required: true
+      SENTRY_AUTH_TOKEN:
+        required: false
 
 env:
   APP_NAME: ${{ vars.APP_NAME }}
@@ -104,6 +106,7 @@ jobs:
         env:
           VERSION_NAME: ${{ steps.get-version.outputs.version }}
           VERSION_CODE: ${{ github.run_number }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           ./gradlew bundleRelease \
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/keystore.jks \
@@ -117,6 +120,7 @@ jobs:
         env:
           VERSION_NAME: ${{ steps.get-version.outputs.version }}
           VERSION_CODE: ${{ github.run_number }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/keystore.jks \
