@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Linking, Alert } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 import { RootStackScreenProps } from '@app-types/navigation';
 import { logger } from '@utils/logger';
@@ -33,6 +33,27 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     navigation.replace('FolderView', { folderId: undefined, folderName: 'Root' });
   };
 
+  const handleTestDeepLink = async () => {
+    const deepLinkUrl = 'com.eprod.mobile-sop://oauth/callback';
+
+    try {
+      logger.info('Attempting to open deep link', { url: deepLinkUrl });
+
+      // Try to open the URL directly without canOpenURL check
+      // canOpenURL may return false in dev mode even if the app is installed
+      await Linking.openURL(deepLinkUrl);
+      logger.info('Deep link opened successfully', { url: deepLinkUrl });
+      Alert.alert('Success', 'Deep link triggered! Check if the other app opened.');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      Alert.alert(
+        'Error',
+        `Failed to open deep link.\n\nError: ${errorMessage}\n\nNote: In Expo dev mode, you may need to build a standalone app for deep links to work properly.`
+      );
+      logger.error('Deep link error', { url: deepLinkUrl, error: errorMessage });
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
@@ -55,6 +76,10 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Sign In</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={[styles.button, styles.testButton]} onPress={handleTestDeepLink}>
+        <Text style={styles.buttonText}>Test Deep Link</Text>
       </TouchableOpacity>
     </View>
   );
@@ -88,6 +113,10 @@ const styles = StyleSheet.create({
     height: 50,
     marginBottom: 16,
     paddingHorizontal: 16,
+  },
+  testButton: {
+    backgroundColor: '#34C759',
+    marginTop: 16,
   },
   title: {
     fontSize: 32,

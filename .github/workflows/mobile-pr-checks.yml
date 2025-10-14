@@ -1,0 +1,42 @@
+name: PR Validation
+
+run-name: "PR Validation - PR #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+      - 'hotfix/**'
+    paths:
+      - 'src/mobile/mobile-sop/**'
+      - '.github/workflows/mobile-*.yml'
+
+jobs:
+  determine-environment:
+    name: Determine Environment
+    uses: ./.github/workflows/mobile-determine-environment.yml
+
+  validate-android:
+    name: Validate Android
+    needs: determine-environment
+    uses: ./.github/workflows/mobile-build-android.yml
+    with:
+      environment: ${{ needs.determine-environment.outputs.environment }}
+      upload-artifact: false  # Don't upload artifacts for PR validation
+    secrets: inherit  # Pass all secrets from the determined environment
+
+  validate-ios:
+    name: Validate iOS
+    needs: determine-environment
+    uses: ./.github/workflows/mobile-build-ios.yml
+    with:
+      environment: ${{ needs.determine-environment.outputs.environment }}
+      export-method: app-store
+      upload-artifact: false  # Don't upload artifacts for PR validation
+    secrets: inherit  # Pass all secrets from the determined environment

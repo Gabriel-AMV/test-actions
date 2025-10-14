@@ -1,0 +1,79 @@
+name: CI/CD - Mobile
+
+run-name: "CI/CD Mobile - ${{ github.event.head_commit.message || github.ref_name }}"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+      - 'release/**'
+      - 'hotfix/**'
+    tags:
+      - 'v*.*.*'
+    paths:
+      - 'src/mobile/mobile-sop/**'
+      - '.github/workflows/mobile-*.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - uat
+          - prod
+        default: 'dev'
+      build-android:
+        description: 'Build Android app'
+        required: false
+        type: boolean
+        default: true
+      build-ios:
+        description: 'Build iOS app'
+        required: false
+        type: boolean
+        default: true
+      ios-export-method:
+        description: 'iOS export method'
+        required: false
+        type: choice
+        options:
+          - app-store
+          - ad-hoc
+          - development
+        default: 'app-store'
+
+jobs:
+  determine-environment:
+    name: Determine Environment
+    uses: ./.github/workflows/mobile-determine-environment.yml
+    with:
+      manual-environment: ${{ inputs.environment }}
+      manual-ios-export-method: ${{ inputs.ios-export-method }}
+
+  build-android:
+    name: Build Android
+    needs: determine-environment
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.build-android }}
+    uses: ./.github/workflows/mobile-build-android.yml
+    with:
+      environment: ${{ needs.determine-environment.outputs.environment }}
+      upload-artifact: true
+    secrets: inherit
+
+  build-ios:
+    name: Build iOS
+    needs: determine-environment
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.build-ios }}
+    uses: ./.github/workflows/mobile-build-ios.yml
+    with:
+      environment: ${{ needs.determine-environment.outputs.environment }}
+      export-method: ${{ needs.determine-environment.outputs.export-method }}
+      upload-artifact: true
+    secrets: inherit
