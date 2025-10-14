@@ -15,6 +15,10 @@ on:
       - main
     tags:
       - 'v*.*.*'
+    paths:
+      - 'src/mobile/mobile-sop/**'
+      - '.github/workflows/mobile-*.yml'
+      - '.github/workflows/deploy-*.yml'
   workflow_dispatch:
 
 jobs:

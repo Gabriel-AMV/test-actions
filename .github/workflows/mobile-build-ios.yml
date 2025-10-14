@@ -40,6 +40,10 @@ jobs:
     outputs:
       artifact-name: ${{ steps.set-artifact-name.outputs.artifact-name }}
 
+    defaults:
+      run:
+        working-directory: ./src/mobile/mobile-sop
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,6 +53,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: './src/mobile/mobile-sop/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
@@ -92,7 +97,7 @@ jobs:
         run: npx expo prebuild --platform ios --clean
 
       - name: Install CocoaPods
-        working-directory: ios
+        working-directory: ./src/mobile/mobile-sop/ios
         run: |
           pod repo update
           pod install --repo-update
@@ -142,7 +147,7 @@ jobs:
           echo "PROVISIONING_PROFILE_NAME=$PP_NAME" >> $GITHUB_ENV
 
       - name: Build iOS IPA using Fastlane
-        working-directory: ios
+        working-directory: ./src/mobile/mobile-sop/ios
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           VERSION_NAME: ${{ steps.get-version.outputs.version }}
@@ -150,12 +155,12 @@ jobs:
         run: |
           # Build and archive
           fastlane run build_app \
-            workspace:"FileTest.xcworkspace" \
-            scheme:"FileTest" \
+            workspace:"${{ env.APP_NAME }}.xcworkspace" \
+            scheme:"${{ env.APP_NAME }}" \
             configuration:"Release" \
             export_method:"${{ inputs.export-method }}" \
             output_directory:"export" \
-            output_name:"FileTest.ipa" \
+            output_name:"${{ env.APP_NAME }}.ipa" \
             export_team_id:"${{ vars.APPLE_TEAM_ID }}" \
             codesigning_identity:"Apple Distribution" \
             export_options:"{\"provisioningProfiles\":{\"${{ env.BUNDLE_ID }}\":\"${{ env.PROVISIONING_PROFILE_NAME }}\"}}" \
@@ -166,7 +171,7 @@ jobs:
         if: failure()
         run: |
           echo "=== Build log ==="
-          cat ~/Library/Logs/gym/FileTest-FileTest.log || echo "Log file not found"
+          cat ~/Library/Logs/gym/${{ env.APP_NAME }}-${{ env.APP_NAME }}.log || echo "Log file not found"
 
       - name: Set artifact name
         if: inputs.upload-artifact
@@ -182,7 +187,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.set-artifact-name.outputs.artifact-name }}
-          path: ios/export/FileTest.ipa
+          path: src/mobile/mobile-sop/ios/export/${{ env.APP_NAME }}.ipa
           retention-days: 30
 
       - name: Clean up keychain and provisioning profile

@@ -88,6 +88,7 @@ This creates:
 6. Click **Continue**
 7. Download the certificate (`.cer` file)
 
+
 #### Step 3: Install Certificate and Create .p12
 
 **Option A: Using Terminal (Recommended)**
@@ -104,6 +105,7 @@ openssl pkcs12 -export \
   -name "iOS Distribution Certificate"
 # Enter a password when prompted - save this password!
 ```
+
 
 You now have `distribution.p12` ready to convert to base64. **Skip to Step 5**.
 
@@ -218,82 +220,6 @@ base64 -i FileTest_Dev_Distribution.mobileprovision | pbcopy
 
 **Result:** Paste into GitHub Environment secret `APPLE_PROVISIONING_PROFILE_BASE64` (one per environment)
 
----
-
-## 5. APP_STORE_CONNECT_API_KEY_ID
-
-### What is it?
-
-The Key ID for your App Store Connect API key (8-10 character string).
-
-### How to get it:
-
-1. Go to https://appstoreconnect.apple.com
-2. Sign in with your Apple ID
-3. Go to **Users and Access** (top menu)
-4. Click **"Keys"** tab (under Integrations)
-5. If you don't have a key, click **"+"** to create one:
-   - Name: `GitHub Actions CI/CD`
-   - Access: **App Manager** (recommended) or **Developer**
-   - Click **Generate**
-6. You'll see the **Key ID** (e.g., `ABC123XYZ`)
-
-**Important:** Note this Key ID - you'll need it!
-
-**Result:** Add to GitHub repository secret `APP_STORE_CONNECT_API_KEY_ID`
-
----
-
-## 6. APP_STORE_CONNECT_ISSUER_ID
-
-### What is it?
-
-Your App Store Connect Issuer ID (UUID format).
-
-### How to get it:
-
-1. In the same page where you created the API Key (Users and Access → Keys)
-2. Look at the top of the page - you'll see **"Issuer ID"**
-3. It's a UUID like: `12345678-1234-1234-1234-123456789012`
-4. Copy this ID
-
-**Result:** Add to GitHub repository secret `APP_STORE_CONNECT_ISSUER_ID`
-
----
-
-## 7. APP_STORE_CONNECT_API_KEY_CONTENT
-
-### What is it?
-
-The actual API key file (`.p8` format) content.
-
-### How to get it:
-
-1. When you create the API key (step 5 above), click **"Download API Key"**
-2. **IMPORTANT:** You can only download this ONCE! Save it securely!
-3. The file will be named something like `AuthKey_ABC123XYZ.p8`
-4. Open the file in a text editor
-5. Copy the **entire content** (including the BEGIN and END lines)
-
-**The content should look like:**
-
-```
------BEGIN PRIVATE KEY-----
-MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg...
-... (many lines) ...
------END PRIVATE KEY-----
-```
-
-**Result:** Paste the entire content into GitHub repository secret `APP_STORE_CONNECT_API_KEY_CONTENT`
-
-**Important Notes:**
-
-- If you lose this file, you must revoke the key and create a new one
-- Store it securely (password manager, encrypted storage)
-- Never commit it to Git
-
----
-
 ## Summary: Add Secrets to GitHub
 
 ### Repository-level secrets (shared across all environments):
@@ -328,14 +254,6 @@ For **each environment** (dev, qa, uat, production), add:
 
 ---
 
-## Testing Without TestFlight Upload
-
-The TestFlight upload steps are currently commented out, so you can test builds without:
-
-- ❌ `APP_STORE_CONNECT_API_KEY_ID` (not needed yet)
-- ❌ `APP_STORE_CONNECT_ISSUER_ID` (not needed yet)
-- ❌ `APP_STORE_CONNECT_API_KEY_CONTENT` (not needed yet)
-
 You only need:
 
 - ✅ `APPLE_TEAM_ID`
@@ -354,43 +272,9 @@ You only need:
 - [ ] Export certificate as `.p12` with password
 - [ ] Create App IDs for all environments (dev, qa, uat, production)
 - [ ] Create Provisioning Profiles for all environments
-- [ ] Create App Store Connect API Key (for uploads later)
 - [ ] Convert all files to base64
 - [ ] Add all secrets to GitHub
 - [ ] Create GitHub Environments (dev, qa, uat, production)
-- [ ] Test with a push to `develop` branch
-
----
-
-## Common Issues & Solutions
-
-### "No valid signing identity found"
-
-- ✅ Make sure you exported BOTH the certificate AND private key as `.p12`
-- ✅ Verify the certificate hasn't expired
-- ✅ Check that base64 encoding is correct (no extra newlines)
-
-### "No provisioning profile matches"
-
-- ✅ Ensure provisioning profile Bundle ID matches your app's Bundle ID exactly
-- ✅ Check that the provisioning profile includes your distribution certificate
-- ✅ Verify the provisioning profile hasn't expired
-
-### "Certificate password incorrect"
-
-- ✅ Double-check you're using the password you set when exporting the `.p12`
-- ✅ Try exporting the certificate again with a new password
-
-### "Team ID not found"
-
-- ✅ Verify you copied the correct Team ID (10 characters)
-- ✅ Make sure you have access to the Apple Developer account
-
-### "API Key invalid"
-
-- ✅ Ensure you copied the entire `.p8` file content including BEGIN/END lines
-- ✅ Check that Key ID and Issuer ID are correct
-- ✅ Verify the API key hasn't been revoked
 
 ---
 
@@ -414,40 +298,3 @@ When they expire:
 3. Select your certificate and click **Generate**
 4. Download and convert to base64
 5. Update GitHub Environment secrets
-
----
-
-## Security Best Practices
-
-1. ✅ Never commit certificates or provisioning profiles to Git
-2. ✅ Use strong passwords for `.p12` files
-3. ✅ Store API keys securely (password manager)
-4. ✅ Only download API key once - back it up immediately
-5. ✅ Rotate API keys annually
-6. ✅ Use separate certificates per environment (optional but recommended)
-7. ✅ Enable required reviewers for production environment
-
----
-
-## Need Help?
-
-**Can't find your certificate?**
-
-- Check Keychain Access → "My Certificates"
-- Look for "Apple Distribution: Your Name"
-
-**Certificate shows as invalid?**
-
-- It may have expired - check expiration date
-- Create a new certificate if needed
-
-**Multiple team memberships?**
-
-- Make sure you're creating resources under the correct team
-- Check the team selector at the top of Apple Developer Portal
-
-**Still stuck?**
-
-- Check GitHub Actions logs for specific error messages
-- Verify all base64 encodings are correct
-- Ensure bundle IDs match exactly across App ID, provisioning profile, and app.config.js

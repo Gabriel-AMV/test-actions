@@ -35,6 +35,10 @@ jobs:
     outputs:
       artifact-name: ${{ steps.set-artifact-name.outputs.artifact-name }}
 
+    defaults:
+      run:
+        working-directory: ./src/mobile/mobile-sop
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,6 +48,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: './src/mobile/mobile-sop/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
@@ -100,7 +105,7 @@ jobs:
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
 
       - name: Build Android AAB with release signing
-        working-directory: android
+        working-directory: ./src/mobile/mobile-sop/android
         env:
           VERSION_NAME: ${{ steps.get-version.outputs.version }}
           VERSION_CODE: ${{ github.run_number }}
@@ -125,7 +130,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.set-artifact-name.outputs.artifact-name }}
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          path: src/mobile/mobile-sop/android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 30
 
       - name: Cleanup
