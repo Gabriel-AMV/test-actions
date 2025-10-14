@@ -1,0 +1,88 @@
+name: Determine Mobile Environment
+
+on:
+  workflow_call:
+    inputs:
+      manual-environment:
+        description: 'Manual environment selection (for workflow_dispatch)'
+        required: false
+        type: string
+      manual-ios-export-method:
+        description: 'Manual iOS export method (for workflow_dispatch)'
+        required: false
+        type: string
+        default: 'app-store'
+    outputs:
+      environment:
+        description: 'The GitHub environment name (DEV-Mobile, UAT-Mobile, PROD-Mobile)'
+        value: ${{ jobs.determine.outputs.environment }}
+      environment-label:
+        description: 'Short environment label (DEV, UAT, PROD)'
+        value: ${{ jobs.determine.outputs.environment-label }}
+      export-method:
+        description: 'iOS export method'
+        value: ${{ jobs.determine.outputs.export-method }}
+
+jobs:
+  determine:
+    name: Determine Environment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      environment-label: ${{ steps.set-env.outputs.environment-label }}
+      export-method: ${{ steps.set-env.outputs.export-method }}
+
+    steps:
+      - name: Set environment based on branch, tag, or manual input
+        id: set-env
+        run: |
+          # Check if manual environment is provided (workflow_dispatch)
+          if [[ -n "${{ inputs.manual-environment }}" ]]; then
+            # Map user-friendly names to actual GitHub environment names
+            case "${{ inputs.manual-environment }}" in
+              dev)
+                echo "environment=dev" >> $GITHUB_OUTPUT
+                echo "environment-label=DEV" >> $GITHUB_OUTPUT
+                ;;
+              uat)
+                echo "environment=UAT-Mobile" >> $GITHUB_OUTPUT
+                echo "environment-label=UAT" >> $GITHUB_OUTPUT
+                ;;
+              prod)
+                echo "environment=PROD-Mobile" >> $GITHUB_OUTPUT
+                echo "environment-label=PROD" >> $GITHUB_OUTPUT
+                ;;
+            esac
+            # Use manual export method
+            echo "export-method=${{ inputs.manual-ios-export-method }}" >> $GITHUB_OUTPUT
+          # Gitflow: Tags always go to production
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "environment=PROD-Mobile" >> $GITHUB_OUTPUT
+            echo "environment-label=PROD" >> $GITHUB_OUTPUT
+            echo "export-method=app-store" >> $GITHUB_OUTPUT
+          # Gitflow: main branch = production
+          elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
+            echo "environment=PROD-Mobile" >> $GITHUB_OUTPUT
+            echo "environment-label=PROD" >> $GITHUB_OUTPUT
+            echo "export-method=app-store" >> $GITHUB_OUTPUT
+          # Gitflow: hotfix branches = production
+          elif [[ "${{ github.ref }}" == refs/heads/hotfix/* ]]; then
+            echo "environment=PROD-Mobile" >> $GITHUB_OUTPUT
+            echo "environment-label=PROD" >> $GITHUB_OUTPUT
+            echo "export-method=app-store" >> $GITHUB_OUTPUT
+          # Gitflow: release branches = UAT (staging before production)
+          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            echo "environment=UAT-Mobile" >> $GITHUB_OUTPUT
+            echo "environment-label=UAT" >> $GITHUB_OUTPUT
+            echo "export-method=app-store" >> $GITHUB_OUTPUT
+          # Gitflow: develop branch = dev environment
+          elif [[ "${{ github.ref }}" == refs/heads/develop ]]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "environment-label=DEV" >> $GITHUB_OUTPUT
+            echo "export-method=app-store" >> $GITHUB_OUTPUT
+          # Default to dev for any other branches
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "environment-label=DEV" >> $GITHUB_OUTPUT
+            echo "export-method=app-store" >> $GITHUB_OUTPUT
+          fi

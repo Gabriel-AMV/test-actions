@@ -11,8 +11,8 @@ on:
     branches:
       - main
       - develop
-      - qa
-      - uat
+      - 'release/**'
+      - 'hotfix/**'
     paths:
       - 'src/mobile/mobile-sop/**'
       - '.github/workflows/mobile-*.yml'
@@ -20,26 +20,7 @@ on:
 jobs:
   determine-environment:
     name: Determine Environment
-    runs-on: ubuntu-latest
-    outputs:
-      environment: ${{ steps.set-env.outputs.environment }}
-    steps:
-      - name: Set environment based on target branch
-        id: set-env
-        run: |
-          TARGET_BRANCH="${{ github.base_ref }}"
-
-          if [ "$TARGET_BRANCH" = "develop" ]; then
-            echo "environment=dev" >> $GITHUB_OUTPUT
-          elif [ "$TARGET_BRANCH" = "qa" ]; then
-            echo "environment=qa" >> $GITHUB_OUTPUT
-          elif [ "$TARGET_BRANCH" = "uat" ]; then
-            echo "environment=uat" >> $GITHUB_OUTPUT
-          elif [ "$TARGET_BRANCH" = "main" ]; then
-            echo "environment=production" >> $GITHUB_OUTPUT
-          else
-            echo "environment=dev" >> $GITHUB_OUTPUT
-          fi
+    uses: ./.github/workflows/mobile-determine-environment.yml
 
   validate-android:
     name: Validate Android
