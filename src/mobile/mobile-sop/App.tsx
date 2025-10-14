@@ -19,6 +19,7 @@ Sentry.init({
   // Adds more context data to events (IP address, cookies, user, etc.)
   sendDefaultPii: true,
 
+  
   // Enable Logs
   enableLogs: true,
 
