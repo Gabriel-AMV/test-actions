@@ -28,6 +28,8 @@ on:
         required: true
       APPLE_PROVISIONING_PROFILE_BASE64:
         required: true
+      SENTRY_AUTH_TOKEN:
+        required: true
 
 jobs:
   build:
@@ -45,6 +47,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Export all environment variables
+        env:
+          VARS_CONTEXT: ${{ toJson(vars) }}
+        run: |
+          echo "$VARS_CONTEXT" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -76,6 +84,7 @@ jobs:
         env:
           NODE_ENV: production
           VERSION_CODE: ${{ github.run_number }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: npx expo prebuild --platform ios --clean
 
       - name: Install CocoaPods
@@ -133,6 +142,7 @@ jobs:
         env:
           VERSION_NAME: ${{ steps.get-version.outputs.version }}
           VERSION_CODE: ${{ github.run_number }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           # Remove spaces from APP_NAME for workspace/scheme (Expo removes spaces)
           WORKSPACE_NAME="${APP_NAME// /}"
