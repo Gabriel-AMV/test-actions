@@ -52,6 +52,9 @@ platform :ios do
       output_directory: "ios/export",
       output_name: "#{app_name}.ipa",
       clean: true,
+      export_team_id: ENV["APPLE_TEAM_ID"],
+      codesigning_identity: "Apple Distribution",
+      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=#{ENV['APPLE_TEAM_ID']}",
       export_options: {
         provisioningProfiles: {
           ENV["BUNDLE_ID"] => "match #{match_type.capitalize} #{ENV['BUNDLE_ID']}"
