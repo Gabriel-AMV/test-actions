@@ -149,6 +149,16 @@ jobs:
           WORKSPACE_NAME=$(echo "${{ env.APP_NAME }}" | tr -d ' ')
           SCHEME_NAME=$(echo "${{ env.APP_NAME }}" | tr -d ' ')
 
+          # Determine match type for profile specifier
+          MATCH_TYPE="AppStore"
+          if [ "${{ inputs.export-method }}" == "ad-hoc" ]; then
+            MATCH_TYPE="AdHoc"
+          elif [ "${{ inputs.export-method }}" == "development" ]; then
+            MATCH_TYPE="Development"
+          fi
+
+          PROFILE_NAME="match $MATCH_TYPE $BUNDLE_ID"
+
           bundle exec fastlane gym \
             --workspace "ios/${WORKSPACE_NAME}.xcworkspace" \
             --scheme "$SCHEME_NAME" \
@@ -159,7 +169,7 @@ jobs:
             --clean \
             --export_team_id "$APPLE_TEAM_ID" \
             --codesigning_identity "Apple Distribution" \
-            --xcargs "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=$APPLE_TEAM_ID"
+            --xcargs "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=$APPLE_TEAM_ID PROVISIONING_PROFILE_SPECIFIER='$PROFILE_NAME'"
 
       - name: Set artifact name
         if: inputs.upload-artifact
