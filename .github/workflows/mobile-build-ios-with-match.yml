@@ -137,6 +137,28 @@ jobs:
             --app_identifier "$BUNDLE_ID" \
             --team_id "$APPLE_TEAM_ID"
 
+      - name: Debug Code Signing
+        run: |
+          echo "=== Installed Certificates ==="
+          security find-identity -v -p codesigning
+
+          echo ""
+          echo "=== Installed Provisioning Profiles ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+
+          echo ""
+          echo "=== Provisioning Profile Details ==="
+          for profile in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
+            echo "Profile: $profile"
+            security cms -D -i "$profile" | plutil -p - | grep -E "Name|UUID|TeamIdentifier|ApplicationIdentifierPrefix"
+            echo "---"
+          done
+
+          echo ""
+          echo "=== Xcode Project Signing Settings ==="
+          WORKSPACE_NAME=$(echo "${{ env.APP_NAME }}" | tr -d ' ')
+          plutil -p "ios/${WORKSPACE_NAME}.xcodeproj/project.pbxproj" | grep -A 5 -B 5 "CODE_SIGN" || echo "No signing settings found in project"
+
       - name: Build iOS IPA
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
