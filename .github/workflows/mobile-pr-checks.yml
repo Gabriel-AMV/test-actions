@@ -13,18 +13,33 @@ on:
       - develop
       - 'release/**'
       - 'hotfix/**'
-    paths:
-      - 'src/mobile/mobile-sop/**'
-      - '.github/workflows/mobile-*.yml'
 
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      mobile: ${{ steps.filter.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            mobile:
+              - 'src/mobile/mobile-sop/**'
+              - '.github/workflows/mobile-*.yml'
+
   determine-environment:
     name: Determine Environment
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
     uses: ./.github/workflows/mobile-determine-environment.yml
 
   validate-android:
     name: Validate Android
-    needs: determine-environment
+    needs: [changes, determine-environment]
+    if: needs.changes.outputs.mobile == 'true'
     uses: ./.github/workflows/mobile-build-android.yml
     with:
       environment: ${{ needs.determine-environment.outputs.environment }}
@@ -33,10 +48,29 @@ jobs:
 
   validate-ios:
     name: Validate iOS
-    needs: determine-environment
+    needs: [changes, determine-environment]
+    if: needs.changes.outputs.mobile == 'true'
     uses: ./.github/workflows/mobile-build-ios-with-match.yml
     with:
       environment: ${{ needs.determine-environment.outputs.environment }}
       export-method: app-store
       upload-artifact: false  # Don't upload artifacts for PR validation
     secrets: inherit  # Pass all secrets from the determined environment
+
+  mobile-pr-check:
+    name: Mobile PR Check
+    runs-on: ubuntu-latest
+    needs: [changes, determine-environment, validate-android, validate-ios]
+    if: always()
+    steps:
+      - name: Check if mobile validation succeeded
+        if: |
+          needs.changes.outputs.mobile == 'true' && (
+            needs.validate-android.result == 'failure' ||
+            needs.validate-ios.result == 'failure'
+          )
+        run: |
+          echo "Mobile validation failed"
+          exit 1
+      - name: All checks passed
+        run: echo "All required PR checks passed or were skipped"
