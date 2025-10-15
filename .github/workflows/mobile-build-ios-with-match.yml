@@ -137,13 +137,16 @@ jobs:
             --team_id "$APPLE_TEAM_ID" \
             --keychain_password "$MATCH_KEYCHAIN_PASSWORD"
 
-      - name: Update Xcode project team
+      - name: Configure manual code signing
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APP_NAME: ${{ env.APP_NAME }}
         run: |
           WORKSPACE_NAME=$(echo "${{ env.APP_NAME }}" | tr -d ' ')
-          bundle exec fastlane run update_project_team path:"ios/${WORKSPACE_NAME}.xcodeproj" teamid:"$APPLE_TEAM_ID"
+          bundle exec fastlane run automatic_code_signing \
+            path:"ios/${WORKSPACE_NAME}.xcodeproj" \
+            use_automatic_signing:false \
+            team_id:"$APPLE_TEAM_ID"
 
       - name: Build iOS IPA
         env:
