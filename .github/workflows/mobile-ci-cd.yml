@@ -47,6 +47,7 @@ on:
           - app-store
           - ad-hoc
           - development
+          - enterprise
         default: 'app-store'
 
 jobs:
@@ -67,13 +68,13 @@ jobs:
       upload-artifact: true
     secrets: inherit
 
-  build-ios:
-    name: Build iOS
-    needs: determine-environment
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.build-ios }}
-    uses: ./.github/workflows/mobile-build-ios.yml
-    with:
-      environment: ${{ needs.determine-environment.outputs.environment }}
-      export-method: ${{ needs.determine-environment.outputs.export-method }}
-      upload-artifact: true
-    secrets: inherit
+  # build-ios:
+  #   name: Build iOS
+  #   needs: determine-environment
+  #   if: ${{ github.event_name != 'workflow_dispatch' || inputs.build-ios }}
+  #   uses: ./.github/workflows/mobile-build-ios.yml
+  #   with:
+  #     environment: ${{ needs.determine-environment.outputs.environment }}
+  #     export-method: ${{ needs.determine-environment.outputs.export-method }}
+  #     upload-artifact: true
+  #   secrets: inherit

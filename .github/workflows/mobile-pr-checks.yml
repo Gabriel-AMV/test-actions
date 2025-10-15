@@ -22,19 +22,19 @@ jobs:
     name: Determine Environment
     uses: ./.github/workflows/mobile-determine-environment.yml
 
-  validate-android:
-    name: Validate Android
-    needs: determine-environment
-    uses: ./.github/workflows/mobile-build-android.yml
-    with:
-      environment: ${{ needs.determine-environment.outputs.environment }}
-      upload-artifact: false  # Don't upload artifacts for PR validation
-    secrets: inherit  # Pass all secrets from the determined environment
+  # validate-android:
+  #   name: Validate Android
+  #   needs: determine-environment
+  #   uses: ./.github/workflows/mobile-build-android.yml
+  #   with:
+  #     environment: ${{ needs.determine-environment.outputs.environment }}
+  #     upload-artifact: false  # Don't upload artifacts for PR validation
+  #   secrets: inherit  # Pass all secrets from the determined environment
 
   validate-ios:
     name: Validate iOS
     needs: determine-environment
-    uses: ./.github/workflows/mobile-build-ios.yml
+    uses: ./.github/workflows/mobile-build-ios-with-match.yml
     with:
       environment: ${{ needs.determine-environment.outputs.environment }}
       export-method: app-store

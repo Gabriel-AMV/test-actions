@@ -1,4 +1,4 @@
-name: Build Android
+name: Build iOS (with Match)
 
 on:
   workflow_call:
@@ -7,6 +7,11 @@ on:
         required: true
         type: string
         description: 'Environment: dev, qa, uat, or production'
+      export-method:
+        required: false
+        type: string
+        default: 'app-store'
+        description: 'Export method: app-store, ad-hoc, development'
       upload-artifact:
         required: false
         type: boolean
@@ -17,21 +22,25 @@ on:
         description: 'Name of the uploaded artifact'
         value: ${{ jobs.build.outputs.artifact-name }}
     secrets:
-      ANDROID_KEYSTORE_BASE64:
+      MATCH_GIT_URL:
         required: true
-      ANDROID_KEYSTORE_PASSWORD:
+        description: 'Git URL for Match certificates repository'
+      MATCH_PASSWORD:
         required: true
-      ANDROID_KEY_ALIAS:
-        required: true
-      ANDROID_KEY_PASSWORD:
-        required: true
+        description: 'Password to decrypt Match certificates'
+      MATCH_GIT_BASIC_AUTHORIZATION:
+        required: false
+        description: 'Base64 encoded Git credentials (username:token)'
+      APPLE_ID:
+        required: false
+        description: 'Apple ID email (optional)'
       SENTRY_AUTH_TOKEN:
         required: true
 
 jobs:
   build:
-    name: Build Android (${{ inputs.environment }})
-    runs-on: ubuntu-latest
+    name: Build iOS (${{ inputs.environment }})
+    runs-on: macos-latest
     environment: ${{ inputs.environment }}
 
     outputs:
@@ -82,53 +91,51 @@ jobs:
           NODE_ENV: production
           VERSION_CODE: ${{ github.run_number }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: npx expo prebuild --platform android --clean
+        run: npx expo prebuild --platform ios --clean
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: './src/mobile/mobile-sop'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false
-
-      - name: Decode keystore
+      - name: Install Fastlane and dependencies
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
+          bundle config set --local path 'vendor/bundle'
+          bundle install
 
-      - name: Build Android APK with release signing
-        working-directory: ./src/mobile/mobile-sop/android
+      - name: Install CocoaPods
+        working-directory: ./src/mobile/mobile-sop/ios
+        run: |
+          pod repo update
+          pod install --repo-update
+
+      - name: Build iOS IPA with Fastlane
         env:
-          VERSION_NAME: ${{ steps.get-version.outputs.version }}
-          VERSION_CODE: ${{ github.run_number }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BUNDLE_ID: ${{ env.BUNDLE_ID }}
+          APP_NAME: ${{ env.APP_NAME }}
+          EXPORT_METHOD: ${{ inputs.export-method }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: |
-          ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=${{ github.workspace }}/src/mobile/mobile-sop/keystore.jks \
-            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
+        run: bundle exec fastlane build
 
       - name: Set artifact name
         if: inputs.upload-artifact
         id: set-artifact-name
         run: |
           VERSION="${{ steps.get-version.outputs.version }}"
-          ARTIFACT_NAME="android-apk-${{ inputs.environment }}-${VERSION}-${{ github.run_number }}"
+          ARTIFACT_NAME="ios-${{ inputs.environment }}-${VERSION}-${{ github.run_number }}"
           echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
           echo "Artifact name: $ARTIFACT_NAME"
 
-      - name: Upload APK artifact
+      - name: Upload artifact
         if: inputs.upload-artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.set-artifact-name.outputs.artifact-name }}
-          path: src/mobile/mobile-sop/android/app/build/outputs/apk/release/app-release.apk
+          path: src/mobile/mobile-sop/ios/export/${{ env.APP_NAME }}.ipa
           retention-days: 30
-
-      - name: Cleanup
-        if: always()
-        run: rm -f keystore.jks

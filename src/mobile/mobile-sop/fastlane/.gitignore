@@ -1,0 +1,17 @@
+# Fastlane specific
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots
+**/fastlane/test_output
+**/fastlane/README.md.bak
+
+# Fastlane Match
+**/fastlane/certs
+
+# Bundle
+.bundle/
+vendor/bundle/
+
+# Temporary files
+*.tmp
+*.lock
