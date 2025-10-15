@@ -28,8 +28,10 @@ platform :ios do
     )
 
     # Build the app
+    workspace_name = ENV['APP_NAME'].delete(' ')
     build_app(
-      scheme: ENV['APP_NAME'].delete(' '),
+      workspace: "./ios/#{workspace_name}.xcworkspace",
+      scheme: workspace_name,
       configuration: "Release",
       export_method: export_method,
       output_directory: "./ios/export",
