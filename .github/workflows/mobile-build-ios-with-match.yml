@@ -111,99 +111,17 @@ jobs:
           pod repo update
           pod install --repo-update
 
-      - name: Setup temporary keychain
-        run: |
-          # Create temporary keychain
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
-
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-
-          # Add keychain to search list
-          security list-keychain -d user -s $KEYCHAIN_PATH $(security list-keychain -d user | sed s/\"//g)
-
-          # Save for later steps
-          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
-          echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> $GITHUB_ENV
-
-      - name: Sync certificates with Match
+      - name: Build iOS IPA with Fastlane
         env:
           MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           BUNDLE_ID: ${{ env.BUNDLE_ID }}
-        run: |
-          MATCH_TYPE="appstore"
-          if [ "${{ inputs.export-method }}" == "ad-hoc" ]; then
-            MATCH_TYPE="adhoc"
-          elif [ "${{ inputs.export-method }}" == "development" ]; then
-            MATCH_TYPE="development"
-          fi
-
-          bundle exec fastlane match $MATCH_TYPE \
-            --readonly true \
-            --git_url "$MATCH_GIT_URL" \
-            --git_branch "main" \
-            --git_basic_authorization "$MATCH_GIT_BASIC_AUTHORIZATION" \
-            --app_identifier "$BUNDLE_ID" \
-            --team_id "$APPLE_TEAM_ID" \
-            --keychain_name "$KEYCHAIN_PATH" \
-            --keychain_password "$KEYCHAIN_PASSWORD"
-
-      - name: Debug Code Signing
-        run: |
-          echo "=== Installed Certificates ==="
-          security find-identity -v -p codesigning
-
-          echo ""
-          echo "=== Installed Provisioning Profiles ==="
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
-
-          echo ""
-          echo "=== Provisioning Profile Details ==="
-          for profile in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
-            echo "Profile: $profile"
-            security cms -D -i "$profile" | plutil -p - | grep -E "Name|UUID|TeamIdentifier|ApplicationIdentifierPrefix"
-            echo "---"
-          done
-
-          echo ""
-          echo "=== Xcode Project Signing Settings ==="
-          WORKSPACE_NAME=$(echo "${{ env.APP_NAME }}" | tr -d ' ')
-          plutil -p "ios/${WORKSPACE_NAME}.xcodeproj/project.pbxproj" | grep -A 5 -B 5 "CODE_SIGN" || echo "No signing settings found in project"
-
-      - name: Build iOS IPA
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          BUNDLE_ID: ${{ env.BUNDLE_ID }}
           APP_NAME: ${{ env.APP_NAME }}
+          EXPORT_METHOD: ${{ inputs.export-method }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: |
-          WORKSPACE_NAME=$(echo "${{ env.APP_NAME }}" | tr -d ' ')
-
-          # Extract provisioning profile UUID and Name
-          PP_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | head -n 1)
-          PP_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< $(security cms -D -i $PP_PATH))
-          PP_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin <<< $(security cms -D -i $PP_PATH))
-
-          echo "Using provisioning profile: $PP_NAME"
-          echo "Profile UUID: $PP_UUID"
-
-          bundle exec fastlane gym \
-            --workspace "ios/${WORKSPACE_NAME}.xcworkspace" \
-            --scheme "$WORKSPACE_NAME" \
-            --configuration "Release" \
-            --export_method "${{ inputs.export-method }}" \
-            --output_directory "ios/export" \
-            --output_name "${{ env.APP_NAME }}.ipa" \
-            --export_team_id "$APPLE_TEAM_ID" \
-            --codesigning_identity "Apple Distribution" \
-            --export_options "{\"provisioningProfiles\":{\"$BUNDLE_ID\":\"$PP_NAME\"}}" \
-            --xcargs "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=$APPLE_TEAM_ID PROVISIONING_PROFILE=$PP_UUID" \
-            --clean
+        run: bundle exec fastlane build
 
       - name: Set artifact name
         if: inputs.upload-artifact

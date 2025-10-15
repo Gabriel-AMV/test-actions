@@ -1,0 +1,40 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build iOS app for distribution"
+  lane :build do |options|
+    # Setup CI keychain
+    setup_ci
+
+    # Get configuration from options or environment
+    export_method = options[:export_method] || ENV['EXPORT_METHOD']
+
+    # Determine match type based on export method
+    match_type = case export_method
+      when "ad-hoc" then "adhoc"
+      when "development" then "development"
+      else "appstore"
+    end
+
+    # Sync certificates and provisioning profiles
+    match(
+      type: match_type,
+      readonly: true,
+      git_url: ENV['MATCH_GIT_URL'],
+      git_branch: "main",
+      git_basic_authorization: ENV['MATCH_GIT_BASIC_AUTHORIZATION'],
+      app_identifier: ENV['BUNDLE_ID'],
+      team_id: ENV['APPLE_TEAM_ID']
+    )
+
+    # Build the app
+    build_app(
+      scheme: ENV['APP_NAME'].delete(' '),
+      configuration: "Release",
+      export_method: export_method,
+      output_directory: "./ios/export",
+      output_name: "#{ENV['APP_NAME']}.ipa",
+      clean: true
+    )
+  end
+end
