@@ -21,7 +21,3 @@ type("appstore")
 
 # Username (Apple ID) - optional if using App Store Connect API Key
 username(ENV["APPLE_ID"])
-
-# Keychain name and password for CI
-keychain_name("fastlane_match")
-keychain_password(ENV["MATCH_KEYCHAIN_PASSWORD"])
