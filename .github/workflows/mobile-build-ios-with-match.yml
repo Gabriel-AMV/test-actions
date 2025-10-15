@@ -111,12 +111,14 @@ jobs:
           pod repo update
           pod install --repo-update
 
+      - name: Setup CI keychain
+        run: bundle exec fastlane run setup_ci
+
       - name: Sync certificates with Match
         env:
           MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-          MATCH_KEYCHAIN_PASSWORD: ${{ github.run_id }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           BUNDLE_ID: ${{ env.BUNDLE_ID }}
         run: |
@@ -134,19 +136,7 @@ jobs:
             --git_branch "main" \
             --git_basic_authorization "$MATCH_GIT_BASIC_AUTHORIZATION" \
             --app_identifier "$BUNDLE_ID" \
-            --team_id "$APPLE_TEAM_ID" \
-            --keychain_password "$MATCH_KEYCHAIN_PASSWORD"
-
-      - name: Configure manual code signing
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APP_NAME: ${{ env.APP_NAME }}
-        run: |
-          WORKSPACE_NAME=$(echo "${{ env.APP_NAME }}" | tr -d ' ')
-          bundle exec fastlane run automatic_code_signing \
-            path:"ios/${WORKSPACE_NAME}.xcodeproj" \
-            use_automatic_signing:false \
-            team_id:"$APPLE_TEAM_ID"
+            --team_id "$APPLE_TEAM_ID"
 
       - name: Build iOS IPA
         env:
@@ -168,7 +158,8 @@ jobs:
             --output_name "${{ env.APP_NAME }}.ipa" \
             --clean \
             --export_team_id "$APPLE_TEAM_ID" \
-            --codesigning_identity "Apple Distribution"
+            --codesigning_identity "Apple Distribution" \
+            --xcargs "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=$APPLE_TEAM_ID"
 
       - name: Set artifact name
         if: inputs.upload-artifact
