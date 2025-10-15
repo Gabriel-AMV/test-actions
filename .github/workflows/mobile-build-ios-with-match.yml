@@ -118,6 +118,7 @@ jobs:
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
           MATCH_KEYCHAIN_PASSWORD: ${{ github.run_id }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BUNDLE_ID: ${{ env.BUNDLE_ID }}
         run: |
           # Determine match type based on export method
           MATCH_TYPE="appstore"
@@ -129,9 +130,12 @@ jobs:
 
           bundle exec fastlane match $MATCH_TYPE \
             --readonly true \
+            --git_url "$MATCH_GIT_URL" \
+            --git_branch "main" \
             --git_basic_authorization "$MATCH_GIT_BASIC_AUTHORIZATION" \
-            --app_identifier "${{ env.BUNDLE_ID }}" \
-            --team_id "$APPLE_TEAM_ID"
+            --app_identifier "$BUNDLE_ID" \
+            --team_id "$APPLE_TEAM_ID" \
+            --keychain_password "$MATCH_KEYCHAIN_PASSWORD"
 
       - name: Build iOS IPA
         env:
