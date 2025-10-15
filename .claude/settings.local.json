@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:dev.to)",
+      "WebFetch(domain:brightinventions.pl)",
+      "WebFetch(domain:litoarias.medium.com)",
+      "WebFetch(domain:medium.com)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

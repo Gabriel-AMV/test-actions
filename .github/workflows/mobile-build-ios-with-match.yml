@@ -11,7 +11,7 @@ on:
         required: false
         type: string
         default: 'app-store'
-        description: 'Export method: app-store, ad-hoc, development'
+        description: 'Export method: app-store, ad-hoc, development, enterprise'
       upload-artifact:
         required: false
         type: boolean
