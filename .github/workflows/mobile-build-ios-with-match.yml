@@ -178,10 +178,19 @@ jobs:
       - name: Build iOS IPA
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BUNDLE_ID: ${{ env.BUNDLE_ID }}
           APP_NAME: ${{ env.APP_NAME }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           WORKSPACE_NAME=$(echo "${{ env.APP_NAME }}" | tr -d ' ')
+
+          # Extract provisioning profile UUID and Name
+          PP_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | head -n 1)
+          PP_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< $(security cms -D -i $PP_PATH))
+          PP_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin <<< $(security cms -D -i $PP_PATH))
+
+          echo "Using provisioning profile: $PP_NAME"
+          echo "Profile UUID: $PP_UUID"
 
           bundle exec fastlane gym \
             --workspace "ios/${WORKSPACE_NAME}.xcworkspace" \
@@ -192,7 +201,8 @@ jobs:
             --output_name "${{ env.APP_NAME }}.ipa" \
             --export_team_id "$APPLE_TEAM_ID" \
             --codesigning_identity "Apple Distribution" \
-            --xcargs "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=$APPLE_TEAM_ID" \
+            --export_options "{\"provisioningProfiles\":{\"$BUNDLE_ID\":\"$PP_NAME\"}}" \
+            --xcargs "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=$APPLE_TEAM_ID PROVISIONING_PROFILE=$PP_UUID" \
             --clean
 
       - name: Set artifact name
