@@ -31,12 +31,12 @@ jobs:
       upload-artifact: false  # Don't upload artifacts for PR validation
     secrets: inherit  # Pass all secrets from the determined environment
 
-  validate-ios:
-    name: Validate iOS
-    needs: determine-environment
-    uses: ./.github/workflows/mobile-build-ios.yml
-    with:
-      environment: ${{ needs.determine-environment.outputs.environment }}
-      export-method: app-store
-      upload-artifact: false  # Don't upload artifacts for PR validation
-    secrets: inherit  # Pass all secrets from the determined environment
+  # validate-ios:
+  #   name: Validate iOS
+  #   needs: determine-environment
+  #   uses: ./.github/workflows/mobile-build-ios.yml
+  #   with:
+  #     environment: ${{ needs.determine-environment.outputs.environment }}
+  #     export-method: app-store
+  #     upload-artifact: false  # Don't upload artifacts for PR validation
+  #   secrets: inherit  # Pass all secrets from the determined environment

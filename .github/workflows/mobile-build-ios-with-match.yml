@@ -1,0 +1,147 @@
+name: Build iOS (with Match)
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+        description: 'Environment: dev, qa, uat, or production'
+      export-method:
+        required: false
+        type: string
+        default: 'app-store'
+        description: 'Export method: app-store, ad-hoc, development'
+      upload-artifact:
+        required: false
+        type: boolean
+        default: true
+        description: 'Whether to upload the built artifact'
+    outputs:
+      artifact-name:
+        description: 'Name of the uploaded artifact'
+        value: ${{ jobs.build.outputs.artifact-name }}
+    secrets:
+      MATCH_GIT_URL:
+        required: true
+        description: 'Git URL for Match certificates repository'
+      MATCH_PASSWORD:
+        required: true
+        description: 'Password to decrypt Match certificates'
+      MATCH_GIT_BASIC_AUTHORIZATION:
+        required: false
+        description: 'Base64 encoded Git credentials (username:token)'
+      APPLE_ID:
+        required: false
+        description: 'Apple ID email (optional)'
+      SENTRY_AUTH_TOKEN:
+        required: true
+
+jobs:
+  build:
+    name: Build iOS (${{ inputs.environment }})
+    runs-on: macos-latest
+    environment: ${{ inputs.environment }}
+
+    outputs:
+      artifact-name: ${{ steps.set-artifact-name.outputs.artifact-name }}
+
+    defaults:
+      run:
+        working-directory: ./src/mobile/mobile-sop
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Export all environment variables
+        env:
+          VARS_CONTEXT: ${{ toJson(vars) }}
+        run: |
+          echo "$VARS_CONTEXT" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './src/mobile/mobile-sop/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Extract version from package.json
+        id: get-version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm run test:coverage
+
+      - name: Run Expo Prebuild
+        env:
+          NODE_ENV: production
+          VERSION_CODE: ${{ github.run_number }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: npx expo prebuild --platform ios --clean
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: './src/mobile/mobile-sop'
+
+      - name: Install Fastlane and dependencies
+        run: |
+          bundle config set --local path 'vendor/bundle'
+          bundle install
+
+      - name: Install CocoaPods
+        working-directory: ./src/mobile/mobile-sop/ios
+        run: |
+          pod repo update
+          pod install --repo-update
+
+      - name: Build iOS IPA using Fastlane Match
+        env:
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_KEYCHAIN_PASSWORD: ${{ github.run_id }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          BUNDLE_ID: ${{ env.BUNDLE_ID }}
+          APP_NAME: ${{ env.APP_NAME }}
+          VERSION_NAME: ${{ steps.get-version.outputs.version }}
+          VERSION_CODE: ${{ github.run_number }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          bundle exec fastlane ios build \
+            export_method:"${{ inputs.export-method }}" \
+            configuration:"Release"
+
+      - name: Set artifact name
+        if: inputs.upload-artifact
+        id: set-artifact-name
+        run: |
+          VERSION="${{ steps.get-version.outputs.version }}"
+          ARTIFACT_NAME="ios-${{ inputs.environment }}-${VERSION}-${{ github.run_number }}"
+          echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+          echo "Artifact name: $ARTIFACT_NAME"
+
+      - name: Upload artifact
+        if: inputs.upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.set-artifact-name.outputs.artifact-name }}
+          path: src/mobile/mobile-sop/ios/export/${{ env.APP_NAME }}.ipa
+          retention-days: 30
