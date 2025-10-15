@@ -41,7 +41,7 @@ jobs:
             # Map user-friendly names to actual GitHub environment names
             case "${{ inputs.manual-environment }}" in
               dev)
-                echo "environment=dev" >> $GITHUB_OUTPUT
+                echo "environment=DEV-Mobile" >> $GITHUB_OUTPUT
                 echo "environment-label=DEV" >> $GITHUB_OUTPUT
                 ;;
               uat)
@@ -55,6 +55,32 @@ jobs:
             esac
             # Use manual export method
             echo "export-method=${{ inputs.manual-ios-export-method }}" >> $GITHUB_OUTPUT
+          # For PRs: Use the target branch (base_ref) to determine environment
+          elif [[ -n "${{ github.base_ref }}" ]]; then
+            TARGET_BRANCH="${{ github.base_ref }}"
+            echo "PR detected - using target branch: $TARGET_BRANCH"
+
+            if [[ "$TARGET_BRANCH" == "main" ]]; then
+              echo "environment=PROD-Mobile" >> $GITHUB_OUTPUT
+              echo "environment-label=PROD" >> $GITHUB_OUTPUT
+              echo "export-method=app-store" >> $GITHUB_OUTPUT
+            elif [[ "$TARGET_BRANCH" == release/* ]]; then
+              echo "environment=UAT-Mobile" >> $GITHUB_OUTPUT
+              echo "environment-label=UAT" >> $GITHUB_OUTPUT
+              echo "export-method=app-store" >> $GITHUB_OUTPUT
+            elif [[ "$TARGET_BRANCH" == hotfix/* ]]; then
+              echo "environment=UAT-Mobile" >> $GITHUB_OUTPUT
+              echo "environment-label=HOTFIX-UAT" >> $GITHUB_OUTPUT
+              echo "export-method=app-store" >> $GITHUB_OUTPUT
+            elif [[ "$TARGET_BRANCH" == "develop" ]]; then
+              echo "environment=DEV-Mobile" >> $GITHUB_OUTPUT
+              echo "environment-label=DEV" >> $GITHUB_OUTPUT
+              echo "export-method=app-store" >> $GITHUB_OUTPUT
+            else
+              echo "environment=DEV-Mobile" >> $GITHUB_OUTPUT
+              echo "environment-label=DEV" >> $GITHUB_OUTPUT
+              echo "export-method=app-store" >> $GITHUB_OUTPUT
+            fi
           # Gitflow: Tags always go to production
           elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
             echo "environment=PROD-Mobile" >> $GITHUB_OUTPUT
@@ -77,12 +103,12 @@ jobs:
             echo "export-method=app-store" >> $GITHUB_OUTPUT
           # Gitflow: develop branch = dev environment
           elif [[ "${{ github.ref }}" == refs/heads/develop ]]; then
-            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "environment=DEV-Mobile" >> $GITHUB_OUTPUT
             echo "environment-label=DEV" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
           # Default to dev for any other branches
           else
-            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "environment=DEV-Mobile" >> $GITHUB_OUTPUT
             echo "environment-label=DEV" >> $GITHUB_OUTPUT
             echo "export-method=app-store" >> $GITHUB_OUTPUT
           fi
