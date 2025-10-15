@@ -40,7 +40,7 @@ platform :ios do
       export_method: export_method,
       output_directory: "./ios/export",
       output_name: "#{ENV['APP_NAME']}.ipa",
-      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=#{ENV['APPLE_TEAM_ID']} PROVISIONING_PROFILE=#{profile_uuid}",
+      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=#{ENV['APPLE_TEAM_ID']} PROVISIONING_PROFILE=#{profile_uuid} CODE_SIGN_IDENTITY='Apple Distribution'",
       clean: true
     )
   end
