@@ -138,6 +138,47 @@ jobs:
             --app_identifier "$BUNDLE_ID" \
             --team_id "$APPLE_TEAM_ID"
 
+      - name: Debug installed provisioning profiles
+        run: |
+          echo "Listing installed provisioning profiles:"
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || echo "No profiles directory found"
+
+          # Show profile details
+          for profile in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
+            if [ -f "$profile" ]; then
+              echo "=== Profile: $(basename "$profile") ==="
+              security cms -D -i "$profile" | plutil -p - | grep -A 2 "Name\|TeamIdentifier\|UUID"
+            fi
+          done
+
+      - name: Update Xcode project with provisioning profiles
+        env:
+          BUNDLE_ID: ${{ env.BUNDLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_NAME: ${{ env.APP_NAME }}
+        run: |
+          # Get the xcodeproj path
+          WORKSPACE_NAME=$(echo "${{ env.APP_NAME }}" | tr -d ' ')
+          XCODEPROJ="ios/${WORKSPACE_NAME}.xcodeproj"
+
+          # Find the installed provisioning profile UUID
+          PROFILE_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | head -n 1)
+
+          if [ -f "$PROFILE_PATH" ]; then
+            PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | plutil -p - | grep '"UUID"' | awk -F'"' '{print $4}')
+            echo "Found profile UUID: $PROFILE_UUID"
+
+            # Update the project to use this profile
+            bundle exec fastlane run update_project_provisioning \
+              xcodeproj:"$XCODEPROJ" \
+              profile:"$PROFILE_PATH" \
+              target_filter:"$WORKSPACE_NAME" \
+              build_configuration:"Release"
+          else
+            echo "Error: No provisioning profile found!"
+            exit 1
+          fi
+
       - name: Build iOS IPA
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -149,16 +190,6 @@ jobs:
           WORKSPACE_NAME=$(echo "${{ env.APP_NAME }}" | tr -d ' ')
           SCHEME_NAME=$(echo "${{ env.APP_NAME }}" | tr -d ' ')
 
-          # Determine match type for profile specifier
-          MATCH_TYPE="AppStore"
-          if [ "${{ inputs.export-method }}" == "ad-hoc" ]; then
-            MATCH_TYPE="AdHoc"
-          elif [ "${{ inputs.export-method }}" == "development" ]; then
-            MATCH_TYPE="Development"
-          fi
-
-          PROFILE_NAME="match $MATCH_TYPE $BUNDLE_ID"
-
           bundle exec fastlane gym \
             --workspace "ios/${WORKSPACE_NAME}.xcworkspace" \
             --scheme "$SCHEME_NAME" \
@@ -167,9 +198,7 @@ jobs:
             --output_directory "ios/export" \
             --output_name "${{ env.APP_NAME }}.ipa" \
             --clean \
-            --export_team_id "$APPLE_TEAM_ID" \
-            --codesigning_identity "Apple Distribution" \
-            --xcargs "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=$APPLE_TEAM_ID PROVISIONING_PROFILE_SPECIFIER='$PROFILE_NAME'"
+            --export_team_id "$APPLE_TEAM_ID"
 
       - name: Set artifact name
         if: inputs.upload-artifact
