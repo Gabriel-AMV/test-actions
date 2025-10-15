@@ -151,7 +151,7 @@ jobs:
             fi
           done
 
-      - name: Update Xcode project with provisioning profiles
+      - name: Update Xcode project with code signing settings
         env:
           BUNDLE_ID: ${{ env.BUNDLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -161,19 +161,26 @@ jobs:
           WORKSPACE_NAME=$(echo "${{ env.APP_NAME }}" | tr -d ' ')
           XCODEPROJ="ios/${WORKSPACE_NAME}.xcodeproj"
 
-          # Find the installed provisioning profile UUID
+          # Find the installed provisioning profile
           PROFILE_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | head -n 1)
 
           if [ -f "$PROFILE_PATH" ]; then
+            # Get profile name and UUID
+            PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | plutil -p - | grep '"Name"' | awk -F'"' '{print $4}')
             PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | plutil -p - | grep '"UUID"' | awk -F'"' '{print $4}')
-            echo "Found profile UUID: $PROFILE_UUID"
 
-            # Update the project to use this profile
-            bundle exec fastlane run update_project_provisioning \
-              xcodeproj:"$XCODEPROJ" \
-              profile:"$PROFILE_PATH" \
-              target_filter:"$WORKSPACE_NAME" \
-              build_configuration:"Release"
+            echo "Found profile: $PROFILE_NAME"
+            echo "Profile UUID: $PROFILE_UUID"
+
+            # Update code signing settings
+            bundle exec fastlane run update_code_signing_settings \
+              path:"$XCODEPROJ" \
+              team_id:"$APPLE_TEAM_ID" \
+              targets:"$WORKSPACE_NAME" \
+              build_configurations:"Release" \
+              code_sign_identity:"Apple Distribution" \
+              profile_name:"$PROFILE_NAME" \
+              profile_uuid:"$PROFILE_UUID"
           else
             echo "Error: No provisioning profile found!"
             exit 1
