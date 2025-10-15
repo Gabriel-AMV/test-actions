@@ -95,22 +95,34 @@ jobs:
         with:
           cache-read-only: false
 
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: './src/mobile/mobile-sop'
+
+      - name: Install Fastlane and dependencies
+        run: |
+          bundle config set --local path 'vendor/bundle'
+          bundle install
+
       - name: Decode keystore
+        id: setup-keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
+          echo "keystore-path=${{ github.workspace }}/src/mobile/mobile-sop/keystore.jks" >> $GITHUB_OUTPUT
 
-      - name: Build Android APK with release signing
-        working-directory: ./src/mobile/mobile-sop/android
+      - name: Build Android APK with Fastlane
         env:
+          KEYSTORE_PATH: ${{ steps.setup-keystore.outputs.keystore-path }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          BUILD_TYPE: apk
           VERSION_NAME: ${{ steps.get-version.outputs.version }}
-          VERSION_CODE: ${{ github.run_number }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: |
-          ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=${{ github.workspace }}/src/mobile/mobile-sop/keystore.jks \
-            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
+        run: bundle exec fastlane android build
 
       - name: Set artifact name
         if: inputs.upload-artifact
