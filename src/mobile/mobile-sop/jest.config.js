@@ -8,6 +8,7 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/**/__tests__/**',
   ],
+  coverageReporters: ['text', 'lcov', 'cobertura'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
     '^expo/src/winter/(.*)$': '<rootDir>/jest.setup.js',

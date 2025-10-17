@@ -39,6 +39,7 @@ yarn-error.*
 
 # test results
 test-results/
+coverage/
 
 # generated native folders
 /ios
