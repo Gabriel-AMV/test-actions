@@ -28,6 +28,10 @@ on:
       SENTRY_AUTH_TOKEN:
         required: true
 
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   build:
     name: Build Android (${{ inputs.environment }})
