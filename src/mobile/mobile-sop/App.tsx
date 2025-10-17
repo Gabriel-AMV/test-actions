@@ -12,6 +12,9 @@ import * as Sentry from '@sentry/react-native';
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
 
+  // Disable automatic native SDK initialization (handled by config plugin)
+  autoInitializeNativeSdk: false,
+
   // Environment-specific configuration
   environment: __DEV__ ? 'development' : 'production',
   enabled: !__DEV__, // Disable Sentry in development to save quota

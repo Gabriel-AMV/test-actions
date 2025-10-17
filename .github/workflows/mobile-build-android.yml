@@ -77,6 +77,13 @@ jobs:
       - name: Run tests
         run: npm run test:coverage
 
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: src/mobile/mobile-sop/test-results/*.xml
+          check_name: Test Results (Android - ${{ inputs.environment }})
+
       - name: Run Expo Prebuild
         env:
           NODE_ENV: production

@@ -45,6 +45,12 @@ module.exports = {
           organization: 'enterprise-products',
         },
       ],
+      [
+        './plugins/withSentryNativeInit',
+        {
+          dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+        },
+      ],
     ],
   },
 };
