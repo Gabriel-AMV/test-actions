@@ -98,16 +98,27 @@ jobs:
           path: src/mobile/mobile-sop/test-results/*.xml
           reporter: jest-junit
 
-      - name: Coverage Report
-        uses: ArtiomTr/jest-coverage-report-action@v2
+      - name: Display coverage summary
         if: always()
-        with:
-          working-directory: src/mobile/mobile-sop
-          test-script: npm run test:coverage
-          skip-step: all
-          annotations: none
-          coverage-file: ./coverage/coverage-summary.json
-          base-coverage-file: ./coverage/coverage-summary.json
+        run: |
+          echo "## Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "coverage/coverage-summary.json" ]; then
+            node -e "
+              const coverage = require('./coverage/coverage-summary.json');
+              const total = coverage.total;
+
+              console.log('| Metric | Coverage |');
+              console.log('|--------|----------|');
+              console.log(\`| Lines | \${total.lines.pct}% (\${total.lines.covered}/\${total.lines.total}) |\`);
+              console.log(\`| Statements | \${total.statements.pct}% (\${total.statements.covered}/\${total.statements.total}) |\`);
+              console.log(\`| Functions | \${total.functions.pct}% (\${total.functions.covered}/\${total.functions.total}) |\`);
+              console.log(\`| Branches | \${total.branches.pct}% (\${total.branches.covered}/\${total.branches.total}) |\`);
+            " >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Coverage report not found" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Run Expo Prebuild
         env:
