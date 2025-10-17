@@ -89,14 +89,13 @@ jobs:
           path: src/mobile/mobile-sop/test-results/*.xml
           reporter: jest-junit
 
-      - name: Code Coverage Summary
-        uses: irongut/CodeCoverageSummary@v1.3.0
+      - name: Coverage Report
+        uses: ArtiomTr/jest-coverage-report-action@v2
         if: always()
         with:
-          filename: src/mobile/mobile-sop/coverage/cobertura-coverage.xml
-          badge: true
-          format: markdown
-          output: both
+          working-directory: src/mobile/mobile-sop
+          test-script: npm run test:coverage
+          skip-step: all
 
       - name: Run Expo Prebuild
         env:
