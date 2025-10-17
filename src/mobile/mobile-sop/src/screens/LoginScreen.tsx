@@ -75,7 +75,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
       />
 
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Sign In</Text>
+        <Text style={styles.buttonText}>Sign In test</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={[styles.button, styles.testButton]} onPress={handleTestDeepLink}>
