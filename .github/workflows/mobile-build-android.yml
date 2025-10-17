@@ -31,7 +31,7 @@ on:
 jobs:
   build:
     name: Build Android (${{ inputs.environment }})
-    runs-on: ubuntu-latest-4-cores
+    runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
 
     outputs:
@@ -78,11 +78,12 @@ jobs:
         run: npm run test:coverage
 
       - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+        uses: dorny/test-reporter@v1
         if: always()
         with:
-          files: src/mobile/mobile-sop/test-results/*.xml
-          check_name: Test Results (Android - ${{ inputs.environment }})
+          name: Test Results (Android - ${{ inputs.environment }})
+          path: src/mobile/mobile-sop/test-results/*.xml
+          reporter: jest-junit
 
       - name: Run Expo Prebuild
         env:

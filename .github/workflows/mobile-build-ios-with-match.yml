@@ -87,11 +87,12 @@ jobs:
         run: npm run test:coverage
 
       - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+        uses: dorny/test-reporter@v1
         if: always()
         with:
-          files: src/mobile/mobile-sop/test-results/*.xml
-          check_name: Test Results (iOS - ${{ inputs.environment }})
+          name: Test Results (iOS - ${{ inputs.environment }})
+          path: src/mobile/mobile-sop/test-results/*.xml
+          reporter: jest-junit
 
       - name: Run Expo Prebuild
         env:
