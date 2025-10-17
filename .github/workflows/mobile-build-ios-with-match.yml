@@ -105,6 +105,9 @@ jobs:
           working-directory: src/mobile/mobile-sop
           test-script: npm run test:coverage
           skip-step: all
+          annotations: none
+          coverage-file: ./coverage/coverage-summary.json
+          base-coverage-file: ./coverage/coverage-summary.json
 
       - name: Run Expo Prebuild
         env:
